@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
 import { PrismaLibSql } from "@prisma/adapter-libsql";
+import { createClient } from "@libsql/client";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -8,8 +9,6 @@ const globalForPrisma = globalThis as unknown as {
 
 function createPrismaClientInstance() {
   // S'assurer que DATABASE_URL est défini
-  // Dans Next.js, les variables d'environnement du .env sont chargées automatiquement
-  // mais on s'assure qu'elles sont bien disponibles
   const databaseUrl = process.env.DATABASE_URL;
   
   if (!databaseUrl) {
@@ -19,17 +18,39 @@ function createPrismaClientInstance() {
     );
   }
   
-  console.log("Initializing Prisma with DATABASE_URL:", databaseUrl);
+  // Détecter si on utilise SQLite local (file:) ou LibSQL (libsql://)
+  const isLocalSQLite = databaseUrl.startsWith("file:");
   
-  // Créer l'adaptateur Prisma avec la configuration directement
-  const adapter = new PrismaLibSql({
-    url: databaseUrl,
-  });
+  if (isLocalSQLite) {
+    // Pour SQLite local, utiliser PrismaClient directement sans adaptateur
+    console.log("Initializing Prisma with local SQLite:", databaseUrl);
+    return new PrismaClient({
+      log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
+    });
+  } else {
+    // Pour LibSQL (Turso) en production, utiliser l'adaptateur
+    console.log("Initializing Prisma with LibSQL:", databaseUrl);
+    
+    // Créer le client LibSQL
+    const libsqlConfig: { url: string; authToken?: string } = {
+      url: databaseUrl,
+    };
+    
+    // Ajouter le token d'authentification si disponible (nécessaire pour Turso)
+    if (process.env.TURSO_AUTH_TOKEN) {
+      libsqlConfig.authToken = process.env.TURSO_AUTH_TOKEN;
+    }
+    
+    const libsql = createClient(libsqlConfig);
+    
+    // Créer l'adaptateur Prisma avec le client LibSQL
+    const adapter = new PrismaLibSql(libsql);
 
-  return new PrismaClient({
-    adapter,
-    log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
-  });
+    return new PrismaClient({
+      adapter,
+      log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
+    });
+  }
 }
 
 export const prisma = globalForPrisma.prisma ?? createPrismaClientInstance();

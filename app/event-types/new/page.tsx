@@ -74,6 +74,11 @@ export default function NewEventTypePage() {
         allTimeSlots.push(...slots);
       });
 
+      console.log("[NewEventTypePage] Envoi des données:", {
+        ...formData,
+        timeSlots: allTimeSlots,
+      });
+
       const response = await fetch("/api/event-types", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -83,12 +88,18 @@ export default function NewEventTypePage() {
         }),
       });
 
+      console.log("[NewEventTypePage] Réponse status:", response.status);
+
       if (!response.ok) {
-        const error = await response.json();
+        const error = await response.json().catch(() => ({ error: "Erreur lors de la création" }));
+        console.error("[NewEventTypePage] Erreur:", error);
         alert(error.error || "Erreur lors de la création");
+        setIsSubmitting(false);
         return;
       }
 
+      const createdEventType = await response.json();
+      console.log("[NewEventTypePage] Type créé avec succès:", createdEventType);
       router.push("/event-types");
     } catch (error) {
       alert("Une erreur est survenue");

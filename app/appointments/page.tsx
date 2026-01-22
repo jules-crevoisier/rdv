@@ -1,14 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import { MainLayout } from "@/components/layout/main-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getAppointments, deleteAppointment, saveAppointment } from "@/lib/storage";
 import { formatDate, formatTime, formatDateTime } from "@/lib/utils";
-import type { Appointment } from "@/lib/types";
 import { Calendar, User, Mail, Phone, FileText, Trash2, Check, X } from "lucide-react";
 import {
   Dialog,
@@ -19,48 +18,130 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
+type AppointmentFromDB = {
+  id: string;
+  userId: string;
+  eventTypeId: string;
+  eventType: {
+    id: string;
+    name: string;
+  };
+  startTime: string;
+  endTime: string;
+  clientName: string;
+  clientEmail: string;
+  clientPhone?: string | null;
+  notes?: string | null;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export default function AppointmentsPage() {
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const { data: session, status: sessionStatus } = useSession();
+  const [appointments, setAppointments] = useState<AppointmentFromDB[]>([]);
+  const [selectedAppointment, setSelectedAppointment] = useState<AppointmentFromDB | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    setAppointments(getAppointments());
-  }, []);
+    const fetchAppointments = async () => {
+      if (sessionStatus === "loading") {
+        return;
+      }
 
-  const handleDelete = (id: string) => {
-    if (confirm("Êtes-vous sûr de vouloir supprimer ce rendez-vous ?")) {
-      deleteAppointment(id);
-      setAppointments(getAppointments());
+      if (!session?.user) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/appointments");
+        if (!response.ok) {
+          console.error("Error fetching appointments:", response.status);
+          setIsLoading(false);
+          return;
+        }
+
+        const data = await response.json();
+        setAppointments(data);
+      } catch (error) {
+        console.error("Error fetching appointments:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAppointments();
+  }, [session, sessionStatus]);
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Êtes-vous sûr de vouloir supprimer ce rendez-vous ?")) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/appointments/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: "Erreur lors de la suppression" }));
+        alert(errorData.error || "Erreur lors de la suppression");
+        return;
+      }
+
+      // Recharger la liste
+      const refreshResponse = await fetch("/api/appointments");
+      if (refreshResponse.ok) {
+        const data = await refreshResponse.json();
+        setAppointments(data);
+      }
+    } catch (error) {
+      console.error("Error deleting appointment:", error);
+      alert("Une erreur est survenue lors de la suppression");
     }
   };
 
-  const handleStatusChange = (id: string, status: Appointment["status"]) => {
-    const appointment = appointments.find((a) => a.id === id);
-    if (appointment) {
-      const updated: Appointment = {
-        ...appointment,
-        status,
-        updatedAt: new Date().toISOString(),
-      };
-      saveAppointment(updated);
-      setAppointments(getAppointments());
+  const handleStatusChange = async (id: string, newStatus: string) => {
+    try {
+      const response = await fetch(`/api/appointments/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: "Erreur lors de la mise à jour" }));
+        alert(errorData.error || "Erreur lors de la mise à jour");
+        return;
+      }
+
+      // Recharger la liste
+      const refreshResponse = await fetch("/api/appointments");
+      if (refreshResponse.ok) {
+        const data = await refreshResponse.json();
+        setAppointments(data);
+      }
+    } catch (error) {
+      console.error("Error updating appointment:", error);
+      alert("Une erreur est survenue lors de la mise à jour");
     }
   };
 
-  const getStatusBadge = (status: Appointment["status"]) => {
-    const variants: Record<Appointment["status"], "default" | "secondary" | "destructive" | "outline"> = {
+  const getStatusBadge = (status: string) => {
+    const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
       pending: "outline",
       confirmed: "default",
       cancelled: "destructive",
       completed: "secondary",
     };
-    const labels: Record<Appointment["status"], string> = {
+    const labels: Record<string, string> = {
       pending: "En attente",
       confirmed: "Confirmé",
       cancelled: "Annulé",
       completed: "Terminé",
     };
-    return <Badge variant={variants[status]}>{labels[status]}</Badge>;
+    return <Badge variant={variants[status] || "outline"}>{labels[status] || status}</Badge>;
   };
 
   const allAppointments = appointments.sort(
@@ -76,7 +157,7 @@ export default function AppointmentsPage() {
     .filter((a) => a.status === "pending")
     .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
 
-  const renderAppointmentCard = (appointment: Appointment) => (
+  const renderAppointmentCard = (appointment: AppointmentFromDB) => (
     <Card key={appointment.id}>
       <CardHeader>
         <div className="flex items-start justify-between">
@@ -85,7 +166,7 @@ export default function AppointmentsPage() {
               <User className="h-5 w-5" />
               {appointment.clientName}
             </CardTitle>
-            <CardDescription className="mt-1">{appointment.eventTypeName}</CardDescription>
+            <CardDescription className="mt-1">{appointment.eventType.name}</CardDescription>
           </div>
           {getStatusBadge(appointment.status)}
         </div>
@@ -141,7 +222,7 @@ export default function AppointmentsPage() {
                   )}
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Type de rendez-vous</p>
-                    <p>{appointment.eventTypeName}</p>
+                    <p>{appointment.eventType.name}</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Date et heure</p>
@@ -196,6 +277,16 @@ export default function AppointmentsPage() {
       </CardContent>
     </Card>
   );
+
+  if (isLoading) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center py-12">
+          <p>Chargement...</p>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>

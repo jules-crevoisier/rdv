@@ -1,35 +1,94 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { getAppointments } from "@/lib/storage";
 import { formatDateTime } from "@/lib/utils";
-import type { Appointment } from "@/lib/types";
 import { CheckCircle, Calendar, User, Mail, Phone } from "lucide-react";
 import Link from "next/link";
 
+type AppointmentData = {
+  id: string;
+  eventTypeId: string;
+  eventType: {
+    name: string;
+  };
+  startTime: string;
+  endTime: string;
+  clientName: string;
+  clientEmail: string;
+  clientPhone?: string | null;
+  notes?: string | null;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 const ConfirmationContent = () => {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const appointmentId = searchParams.get("appointmentId");
-  const [appointment, setAppointment] = useState<Appointment | null>(null);
+  const [appointment, setAppointment] = useState<AppointmentData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (appointmentId) {
-      const appointments = getAppointments();
-      const found = appointments.find((a) => a.id === appointmentId);
-      if (found) {
-        setAppointment(found);
+    const fetchAppointment = async () => {
+      if (!appointmentId) {
+        setError("ID de rendez-vous manquant");
+        setIsLoading(false);
+        return;
       }
-    }
+
+      try {
+        const response = await fetch(`/api/appointments/public/${appointmentId}`);
+        if (!response.ok) {
+          if (response.status === 404) {
+            setError("Rendez-vous non trouvé");
+          } else {
+            setError("Erreur lors de la récupération du rendez-vous");
+          }
+          setIsLoading(false);
+          return;
+        }
+
+        const data = await response.json();
+        setAppointment(data);
+      } catch (error) {
+        console.error("Error fetching appointment:", error);
+        setError("Une erreur est survenue");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAppointment();
   }, [appointmentId]);
 
-  if (!appointment) {
+  if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <p>Chargement...</p>
+      </div>
+    );
+  }
+
+  if (error || !appointment) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Card className="max-w-md">
+          <CardHeader>
+            <CardTitle>Erreur</CardTitle>
+            <CardDescription>{error || "Rendez-vous non trouvé"}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/">
+              <Button variant="outline" className="w-full">Retour à l'accueil</Button>
+            </Link>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -64,7 +123,7 @@ const ConfirmationContent = () => {
                   <User className="h-5 w-5 text-muted-foreground" />
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Type de rendez-vous</p>
-                    <p className="text-lg font-semibold">{appointment.eventTypeName}</p>
+                    <p className="text-lg font-semibold">{appointment.eventType.name}</p>
                   </div>
                 </div>
 

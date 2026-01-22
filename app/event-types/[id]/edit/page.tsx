@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { MainLayout } from "@/components/layout/main-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,8 +10,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { getEventTypes, saveEventType } from "@/lib/storage";
-import type { EventType } from "@/lib/types";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
@@ -23,39 +22,105 @@ const colors = [
   { name: "Rose", value: "#ec4899" },
 ];
 
+type EventTypeFromDB = {
+  id: string;
+  name: string;
+  description: string;
+  duration: number;
+  color: string;
+  bufferTime: number;
+  status: string;
+  requiresApproval: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export default function EditEventTypePage() {
   const router = useRouter();
   const params = useParams();
+  const { data: session } = useSession();
   const id = params.id as string;
-  const [formData, setFormData] = useState<EventType | null>(null);
+  const [formData, setFormData] = useState<EventTypeFromDB | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    const eventTypes = getEventTypes();
-    const eventType = eventTypes.find((et) => et.id === id);
-    if (eventType) {
-      setFormData(eventType);
-    } else {
-      router.push("/event-types");
-    }
-  }, [id, router]);
+    const fetchEventType = async () => {
+      console.log("[EditEventTypePage] Chargement du type:", id);
+      if (!session?.user) {
+        console.log("[EditEventTypePage] Pas de session");
+        setIsLoading(false);
+        return;
+      }
 
-  const handleSubmit = (e: React.FormEvent) => {
+      try {
+        const response = await fetch(`/api/event-types/${id}`);
+        console.log("[EditEventTypePage] Réponse status:", response.status);
+        
+        if (!response.ok) {
+          console.error("[EditEventTypePage] Erreur:", response.status);
+          router.push("/event-types");
+          return;
+        }
+
+        const data = await response.json();
+        console.log("[EditEventTypePage] Type chargé:", data);
+        setFormData(data);
+      } catch (error) {
+        console.error("[EditEventTypePage] Erreur lors du chargement:", error);
+        router.push("/event-types");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchEventType();
+  }, [id, session, router]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData || !formData.name || !formData.description) {
       alert("Veuillez remplir tous les champs obligatoires");
       return;
     }
 
-    const updatedEventType: EventType = {
-      ...formData,
-      updatedAt: new Date().toISOString(),
-    };
+    setIsSubmitting(true);
 
-    saveEventType(updatedEventType);
-    router.push("/event-types");
+    try {
+      console.log("[EditEventTypePage] Envoi des modifications:", formData);
+      const response = await fetch(`/api/event-types/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.name,
+          description: formData.description,
+          duration: formData.duration,
+          color: formData.color,
+          bufferTime: formData.bufferTime,
+          status: formData.status,
+          requiresApproval: formData.requiresApproval,
+        }),
+      });
+
+      console.log("[EditEventTypePage] Réponse status:", response.status);
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: "Erreur lors de la mise à jour" }));
+        alert(error.error || "Erreur lors de la mise à jour");
+        setIsSubmitting(false);
+        return;
+      }
+
+      console.log("[EditEventTypePage] Type mis à jour avec succès");
+      router.push("/event-types");
+    } catch (error) {
+      console.error("[EditEventTypePage] Erreur:", error);
+      alert("Une erreur est survenue");
+      setIsSubmitting(false);
+    }
   };
 
-  if (!formData) {
+  if (isLoading || !formData) {
     return (
       <MainLayout>
         <div className="flex items-center justify-center py-12">
@@ -211,7 +276,9 @@ export default function EditEventTypePage() {
                 Annuler
               </Button>
             </Link>
-            <Button type="submit">Enregistrer</Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Enregistrement..." : "Enregistrer"}
+            </Button>
           </div>
         </form>
       </div>

@@ -11,7 +11,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
 import { formatDate, formatTime, addMinutes } from "@/lib/utils";
 import type { BookingFormData } from "@/lib/types";
-import { Clock, Calendar as CalendarIcon, User, Mail, Phone, FileText } from "lucide-react";
+import { Clock, Calendar as CalendarIcon, User, Mail, Phone, FileText, XCircle, Archive } from "lucide-react";
 
 type EventType = {
   id: string;
@@ -45,20 +45,22 @@ export default function BookPage() {
       try {
         const response = await fetch(`/api/event-types/public/${eventTypeId}`);
         if (!response.ok) {
-          router.push("/");
+          // Si le type n'existe pas, on garde eventType à null pour afficher un message
+          setEventType(null);
+          setIsLoading(false);
           return;
         }
         const data = await response.json();
         setEventType(data);
       } catch (error) {
-        router.push("/");
+        setEventType(null);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchEventType();
-  }, [eventTypeId, router]);
+  }, [eventTypeId]);
 
   useEffect(() => {
     const fetchSlots = async () => {
@@ -113,21 +115,28 @@ export default function BookPage() {
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        alert(error.error || "Erreur lors de la réservation");
+        const errorData = await response.json().catch(() => ({ error: "Erreur lors de la réservation" }));
+        alert(errorData.error || "Erreur lors de la réservation");
+        setIsSubmitting(false);
         return;
       }
 
       const appointment = await response.json();
+      if (!appointment || !appointment.id) {
+        alert("Erreur : le rendez-vous n'a pas pu être créé");
+        setIsSubmitting(false);
+        return;
+      }
+
       router.push(`/book/${eventTypeId}/confirmation?appointmentId=${appointment.id}`);
     } catch (error) {
-      alert("Une erreur est survenue");
-    } finally {
+      console.error("Error creating appointment:", error);
+      alert("Une erreur est survenue lors de la création du rendez-vous");
       setIsSubmitting(false);
     }
   };
 
-  if (isLoading || !eventType) {
+  if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <p>Chargement...</p>
@@ -135,12 +144,73 @@ export default function BookPage() {
     );
   }
 
-  if (eventType.status !== "online") {
+  // Si le type n'existe pas
+  if (!eventType) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <h1 className="mb-2 text-2xl font-bold">Ce formulaire n'est pas disponible</h1>
-          <p className="text-muted-foreground">Le formulaire de réservation est actuellement fermé.</p>
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="container mx-auto px-4">
+          <Card className="max-w-md mx-auto">
+            <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+              <XCircle className="h-16 w-16 text-destructive mb-4" />
+              <h1 className="mb-2 text-2xl font-bold">Type de rendez-vous introuvable</h1>
+              <p className="text-muted-foreground mb-4">
+                Le type de rendez-vous que vous recherchez n'existe pas ou a été supprimé.
+              </p>
+              <Button variant="outline" onClick={() => router.push("/")}>
+                Retour à l'accueil
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // Si le statut ne permet pas l'accès
+  if (eventType.status !== "online" && eventType.status !== "private") {
+    const getStatusMessage = () => {
+      switch (eventType.status) {
+        case "archived":
+          return {
+            icon: <Archive className="h-16 w-16 text-muted-foreground mb-4" />,
+            title: "Type de rendez-vous archivé",
+            message: "Ce type de rendez-vous a été archivé et n'est plus disponible pour les réservations.",
+            description: "Les réservations pour ce type de rendez-vous ne sont plus acceptées. Veuillez contacter l'organisateur pour plus d'informations.",
+          };
+        case "closed":
+          return {
+            icon: <XCircle className="h-16 w-16 text-destructive mb-4" />,
+            title: "Réservations fermées",
+            message: "Ce type de rendez-vous est actuellement fermé et n'accepte plus de nouvelles réservations.",
+            description: "Les réservations sont temporairement suspendues. Veuillez réessayer plus tard ou contacter l'organisateur.",
+          };
+        default:
+          return {
+            icon: <XCircle className="h-16 w-16 text-muted-foreground mb-4" />,
+            title: "Formulaire indisponible",
+            message: "Le formulaire de réservation est actuellement indisponible.",
+            description: "Veuillez réessayer plus tard ou contacter l'organisateur pour plus d'informations.",
+          };
+      }
+    };
+
+    const statusInfo = getStatusMessage();
+
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="container mx-auto px-4">
+          <Card className="max-w-md mx-auto">
+            <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+              {statusInfo.icon}
+              <h1 className="mb-2 text-2xl font-bold">{statusInfo.title}</h1>
+              <p className="text-muted-foreground mb-2 font-medium">{statusInfo.message}</p>
+              <p className="text-sm text-muted-foreground mb-6">{statusInfo.description}</p>
+              <div className="space-y-2">
+                <p className="text-sm font-medium">{eventType.name}</p>
+                <p className="text-xs text-muted-foreground">{eventType.description}</p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );

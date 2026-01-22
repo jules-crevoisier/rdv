@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import { MainLayout } from "@/components/layout/main-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,19 +9,82 @@ import { Calendar } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Plus, Users, Calendar as CalendarIcon } from "lucide-react";
 import Link from "next/link";
-import { getEventTypes, getAppointments } from "@/lib/storage";
 import { formatDate, formatTime, isSameDay } from "@/lib/utils";
-import type { EventType, Appointment } from "@/lib/types";
+
+type EventTypeFromDB = {
+  id: string;
+  name: string;
+  description: string;
+  duration: number;
+  color: string;
+  bufferTime: number;
+  status: string;
+  requiresApproval: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type AppointmentFromDB = {
+  id: string;
+  userId: string;
+  eventTypeId: string;
+  eventType: {
+    id: string;
+    name: string;
+  };
+  startTime: string;
+  endTime: string;
+  clientName: string;
+  clientEmail: string;
+  clientPhone?: string | null;
+  notes?: string | null;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+};
 
 export default function DashboardPage() {
-  const [eventTypes, setEventTypes] = useState<EventType[]>([]);
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const { data: session, status: sessionStatus } = useSession();
+  const [eventTypes, setEventTypes] = useState<EventTypeFromDB[]>([]);
+  const [appointments, setAppointments] = useState<AppointmentFromDB[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    setEventTypes(getEventTypes());
-    setAppointments(getAppointments());
-  }, []);
+    const fetchData = async () => {
+      if (sessionStatus === "loading") {
+        return;
+      }
+
+      if (!session?.user) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const [eventTypesResponse, appointmentsResponse] = await Promise.all([
+          fetch("/api/event-types"),
+          fetch("/api/appointments"),
+        ]);
+
+        if (eventTypesResponse.ok) {
+          const eventTypesData = await eventTypesResponse.json();
+          setEventTypes(eventTypesData);
+        }
+
+        if (appointmentsResponse.ok) {
+          const appointmentsData = await appointmentsResponse.json();
+          setAppointments(appointmentsData);
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [session, sessionStatus]);
 
   const todayAppointments = appointments.filter((apt) => {
     const aptDate = new Date(apt.startTime);
@@ -37,21 +101,31 @@ export default function DashboardPage() {
     .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
     .slice(0, 5);
 
-  const getStatusBadge = (status: Appointment["status"]) => {
-    const variants: Record<Appointment["status"], "default" | "secondary" | "destructive" | "outline"> = {
+  const getStatusBadge = (status: string) => {
+    const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
       pending: "outline",
       confirmed: "default",
       cancelled: "destructive",
       completed: "secondary",
     };
-    const labels: Record<Appointment["status"], string> = {
+    const labels: Record<string, string> = {
       pending: "En attente",
       confirmed: "Confirmé",
       cancelled: "Annulé",
       completed: "Terminé",
     };
-    return <Badge variant={variants[status]}>{labels[status]}</Badge>;
+    return <Badge variant={variants[status] || "outline"}>{labels[status] || status}</Badge>;
   };
+
+  if (isLoading) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center py-12">
+          <p>Chargement...</p>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -143,7 +217,7 @@ export default function DashboardPage() {
                     <div key={apt.id} className="flex items-center justify-between rounded-lg border p-4">
                       <div className="flex-1">
                         <p className="font-medium">{apt.clientName}</p>
-                        <p className="text-sm text-muted-foreground">{apt.eventTypeName}</p>
+                        <p className="text-sm text-muted-foreground">{apt.eventType.name}</p>
                         <p className="text-sm text-muted-foreground">
                           {formatDate(apt.startTime)} à {formatTime(apt.startTime)}
                         </p>

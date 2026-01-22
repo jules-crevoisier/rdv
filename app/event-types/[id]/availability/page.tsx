@@ -2,18 +2,17 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { MainLayout } from "@/components/layout/main-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { getEventTypes, getAvailabilityByEventType, saveAvailability } from "@/lib/storage";
-import { generateId, getDayName } from "@/lib/utils";
-import type { EventType, Availability, TimeSlot } from "@/lib/types";
+import { Badge } from "@/components/ui/badge";
+import type { TimeSlot } from "@/lib/types";
 import { ArrowLeft, Plus, Trash2, Clock } from "lucide-react";
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
 
 const daysOfWeek = [
   { value: 0, label: "Dimanche" },
@@ -25,47 +24,87 @@ const daysOfWeek = [
   { value: 6, label: "Samedi" },
 ];
 
+type EventTypeFromDB = {
+  id: string;
+  name: string;
+  description: string;
+  duration: number;
+  color: string;
+  bufferTime: number;
+  status: string;
+  requiresApproval: boolean;
+  availability?: {
+    id: string;
+    eventTypeId: string;
+    timeSlots: string;
+    dateOverrides: string;
+  };
+};
+
 export default function AvailabilityPage() {
   const router = useRouter();
   const params = useParams();
+  const { data: session } = useSession();
   const id = params.id as string;
-  const [eventType, setEventType] = useState<EventType | null>(null);
-  const [availability, setAvailability] = useState<Availability | null>(null);
+  const [eventType, setEventType] = useState<EventTypeFromDB | null>(null);
   const [timeSlotsByDay, setTimeSlotsByDay] = useState<Record<number, TimeSlot[]>>({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    const eventTypes = getEventTypes();
-    const found = eventTypes.find((et) => et.id === id);
-    if (found) {
-      setEventType(found);
-      const avail = getAvailabilityByEventType(id);
-      if (avail) {
-        setAvailability(avail);
+    const fetchData = async () => {
+      console.log("[AvailabilityPage] Chargement pour eventTypeId:", id);
+      if (!session?.user) {
+        console.log("[AvailabilityPage] Pas de session");
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/event-types/${id}`);
+        console.log("[AvailabilityPage] Réponse status:", response.status);
+        
+        if (!response.ok) {
+          console.error("[AvailabilityPage] Erreur:", response.status);
+          router.push("/event-types");
+          return;
+        }
+
+        const data = await response.json();
+        console.log("[AvailabilityPage] Type chargé:", data);
+        setEventType(data);
+
         // Organiser les créneaux par jour
-        const slotsByDay: Record<number, TimeSlot[]> = {};
-        daysOfWeek.forEach((day) => {
-          slotsByDay[day.value] = avail.timeSlots.filter((slot) => slot.day === day.value);
-        });
-        setTimeSlotsByDay(slotsByDay);
-      } else {
-        // Créer une disponibilité vide
-        const newAvail: Availability = {
-          id: generateId(),
-          eventTypeId: id,
-          timeSlots: [],
-          dateOverrides: [],
-        };
-        setAvailability(newAvail);
         const slotsByDay: Record<number, TimeSlot[]> = {};
         daysOfWeek.forEach((day) => {
           slotsByDay[day.value] = [];
         });
+
+        if (data.availability?.timeSlots) {
+          try {
+            const timeSlots: TimeSlot[] = JSON.parse(data.availability.timeSlots);
+            console.log("[AvailabilityPage] TimeSlots parsés:", timeSlots);
+            timeSlots.forEach((slot) => {
+              if (slotsByDay[slot.day]) {
+                slotsByDay[slot.day].push(slot);
+              }
+            });
+          } catch (error) {
+            console.error("[AvailabilityPage] Erreur lors du parsing des timeSlots:", error);
+          }
+        }
+
         setTimeSlotsByDay(slotsByDay);
+      } catch (error) {
+        console.error("[AvailabilityPage] Erreur lors du chargement:", error);
+        router.push("/event-types");
+      } finally {
+        setIsLoading(false);
       }
-    } else {
-      router.push("/event-types");
-    }
-  }, [id, router]);
+    };
+
+    fetchData();
+  }, [id, session, router]);
 
   const handleAddTimeSlot = (day: number) => {
     const newSlot: TimeSlot = {
@@ -95,25 +134,51 @@ export default function AvailabilityPage() {
     });
   };
 
-  const handleSave = () => {
-    if (!availability || !eventType) return;
+  const handleSave = async () => {
+    if (!eventType) return;
 
-    // Rassembler tous les créneaux
-    const allTimeSlots: TimeSlot[] = [];
-    Object.values(timeSlotsByDay).forEach((slots) => {
-      allTimeSlots.push(...slots);
-    });
+    setIsSaving(true);
 
-    const updatedAvailability: Availability = {
-      ...availability,
-      timeSlots: allTimeSlots,
-    };
+    try {
+      // Rassembler tous les créneaux
+      const allTimeSlots: TimeSlot[] = [];
+      Object.values(timeSlotsByDay).forEach((slots) => {
+        allTimeSlots.push(...slots);
+      });
 
-    saveAvailability(updatedAvailability);
-    router.push("/event-types");
+      console.log("[AvailabilityPage] Envoi des disponibilités:", {
+        eventTypeId: id,
+        timeSlots: allTimeSlots,
+      });
+
+      const response = await fetch(`/api/availability/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          timeSlots: allTimeSlots,
+          dateOverrides: [],
+        }),
+      });
+
+      console.log("[AvailabilityPage] Réponse status:", response.status);
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: "Erreur lors de la sauvegarde" }));
+        alert(error.error || "Erreur lors de la sauvegarde");
+        setIsSaving(false);
+        return;
+      }
+
+      console.log("[AvailabilityPage] Disponibilités sauvegardées avec succès");
+      router.push("/event-types");
+    } catch (error) {
+      console.error("[AvailabilityPage] Erreur:", error);
+      alert("Une erreur est survenue");
+      setIsSaving(false);
+    }
   };
 
-  if (!eventType || !availability) {
+  if (isLoading || !eventType) {
     return (
       <MainLayout>
         <div className="flex items-center justify-center py-12">
@@ -231,7 +296,9 @@ export default function AvailabilityPage() {
               Annuler
             </Button>
           </Link>
-          <Button onClick={handleSave}>Enregistrer les disponibilités</Button>
+          <Button onClick={handleSave} disabled={isSaving}>
+            {isSaving ? "Enregistrement..." : "Enregistrer les disponibilités"}
+          </Button>
         </div>
       </div>
     </MainLayout>

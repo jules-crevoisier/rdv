@@ -162,9 +162,10 @@ export const getAppointmentsByEventType = async (eventTypeId: string) => {
 };
 
 // Public - Get event type by ID (for booking page)
+// Retourne le type même s'il est archived/closed pour afficher un message approprié
 export const getPublicEventType = async (id: string) => {
   return await prisma.eventType.findUnique({
-    where: { id, status: "online" },
+    where: { id },
     include: { availability: true },
   });
 };
