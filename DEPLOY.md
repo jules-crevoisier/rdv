@@ -42,11 +42,19 @@ Dans les paramètres du projet Vercel :
 1. Allez dans **Settings** → **Environment Variables**
 2. Ajoutez les variables suivantes :
 
-#### DATABASE_URL
-- **Valeur** : Copiez la valeur depuis votre base de données Vercel Postgres
+#### DATABASE_PRISMA_DATABASE_URL (requis)
+- **Valeur** : URL Prisma Accelerate pour le client Prisma
   - Allez dans **Storage** → Votre base de données → **.env.local**
-  - Copiez la valeur de `POSTGRES_PRISMA_URL` ou `POSTGRES_URL_NON_POOLING`
+  - Copiez la valeur de `DATABASE_PRISMA_DATABASE_URL` (commence par `prisma+postgres://`)
 - **Environnements** : Production, Preview, Development
+- **Note** : Cette URL est utilisée par le client Prisma pour les requêtes (avec Accelerate)
+
+#### DATABASE_POSTGRES_URL (requis pour les migrations)
+- **Valeur** : URL PostgreSQL standard (nécessaire pour les migrations)
+  - Allez dans **Storage** → Votre base de données → **.env.local**
+  - Copiez la valeur de `DATABASE_POSTGRES_URL` (commence par `postgres://`)
+- **Environnements** : Production, Preview, Development
+- **Note** : Cette URL est utilisée uniquement pour les migrations Prisma (via `prisma.config.ts`)
 
 #### AUTH_SECRET
 - **Valeur** : Générez un secret sécurisé :
