@@ -4,9 +4,6 @@ import { getPublicEventType, getEventType, updateAvailability } from "@/lib/db";
 import { getAvailableTimeSlotsForEventType } from "@/lib/availability-utils";
 import type { TimeSlot } from "@/lib/types";
 
-// Utiliser Node.js runtime car Prisma n'est pas compatible avec Edge Runtime
-export const runtime = "nodejs";
-
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;

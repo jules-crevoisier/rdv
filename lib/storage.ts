@@ -1,9 +1,9 @@
 import type { EventType, Availability, Appointment } from "./types";
 
 const STORAGE_KEYS = {
-  EVENT_TYPES: "appointlet_event_types",
-  AVAILABILITIES: "appointlet_availabilities",
-  APPOINTMENTS: "appointlet_appointments",
+  EVENT_TYPES: "reservy_event_types",
+  AVAILABILITIES: "reservy_availabilities",
+  APPOINTMENTS: "reservy_appointments",
 } as const;
 
 // Event Types

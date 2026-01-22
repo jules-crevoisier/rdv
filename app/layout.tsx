@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Appointlet - Gestion de rendez-vous",
+  title: "Reservy - Gestion de rendez-vous",
   description: "Outil professionnel de gestion de rendez-vous en ligne",
 };
 

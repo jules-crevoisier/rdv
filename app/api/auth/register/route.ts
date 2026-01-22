@@ -3,9 +3,6 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
-// Utiliser Node.js runtime car Prisma n'est pas compatible avec Edge Runtime
-export const runtime = "nodejs";
-
 export async function POST(request: Request) {
   try {
     const body = await request.json();

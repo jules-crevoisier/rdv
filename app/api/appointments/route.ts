@@ -3,9 +3,6 @@ import { auth } from "@/auth";
 import { getPublicEventType, getAppointments } from "@/lib/db";
 import { prisma } from "@/lib/prisma";
 
-// Utiliser Node.js runtime car Prisma n'est pas compatible avec Edge Runtime
-export const runtime = "nodejs";
-
 export async function GET(request: Request) {
   try {
     const session = await auth();

@@ -2,9 +2,6 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { createEventType, getEventTypes } from "@/lib/db";
 
-// Utiliser Node.js runtime car Prisma n'est pas compatible avec Edge Runtime
-export const runtime = "nodejs";
-
 export async function GET(request: Request) {
   try {
     console.log("[GET /api/event-types] Début de la récupération des types de rendez-vous");

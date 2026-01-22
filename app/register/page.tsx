@@ -64,7 +64,7 @@ export default function RegisterPage() {
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary">
             <Calendar className="h-8 w-8 text-primary-foreground" />
           </div>
-          <h1 className="text-3xl font-bold">Appointlet</h1>
+          <h1 className="text-3xl font-bold">Reservy</h1>
           <p className="mt-2 text-muted-foreground">Créez votre compte</p>
         </div>
 

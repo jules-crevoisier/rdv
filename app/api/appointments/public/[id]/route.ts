@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-// Utiliser Node.js runtime car Prisma n'est pas compatible avec Edge Runtime
-export const runtime = "nodejs";
-
 // Route publique pour la confirmation de rendez-vous
 // Permet aux clients de voir leur confirmation sans être connectés
 export async function GET(

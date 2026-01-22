@@ -21,7 +21,7 @@ export const Navigation = () => {
           <div className="flex items-center gap-8">
             <Link href="/" className="flex items-center gap-2 font-semibold">
               <Calendar className="h-6 w-6" />
-              <span>Appointlet</span>
+              <span>Reservy</span>
             </Link>
             <div className="flex gap-1">
               {navigation.map((item) => {

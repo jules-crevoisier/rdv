@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
 import { getPublicEventType } from "@/lib/db";
 
-// Utiliser Node.js runtime car Prisma n'est pas compatible avec Edge Runtime
-export const runtime = "nodejs";
-
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
