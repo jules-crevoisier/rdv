@@ -371,6 +371,16 @@ export default function BookPage() {
           <Card className="mt-8">
             <CardHeader>
               <CardTitle>Détails du rendez-vous</CardTitle>
+              <CardDescription>
+                <Link href="/client/login" className="text-primary hover:underline">
+                  Connectez-vous
+                </Link>
+                {" ou "}
+                <Link href="/client/register" className="text-primary hover:underline">
+                  créez un compte
+                </Link>
+                {" pour voir tous vos rendez-vous"}
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid gap-4 md:grid-cols-3">

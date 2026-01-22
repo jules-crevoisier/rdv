@@ -47,12 +47,25 @@ model Availability {
   updatedAt     DateTime  @updatedAt
 }
 
+model Client {
+  id            String        @id @default(cuid())
+  email         String        @unique
+  name          String?
+  password      String
+  phone         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  appointments  Appointment[]
+}
+
 model Appointment {
   id            String    @id @default(cuid())
   userId        String
   user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   eventTypeId   String
   eventType     EventType @relation(fields: [eventTypeId], references: [id], onDelete: Cascade)
+  clientId      String?
+  client        Client?   @relation(fields: [clientId], references: [id], onDelete: SetNull)
   startTime     DateTime
   endTime       DateTime
   clientName    String

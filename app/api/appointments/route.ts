@@ -29,6 +29,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Type de rendez-vous non trouvé" }, { status: 404 });
     }
 
+    // Vérifier si un client est connecté
+    let clientId: string | null = null;
+    try {
+      const { clientAuth } = await import("@/auth-client");
+      const clientSession = await clientAuth();
+      if (clientSession?.user?.id && clientSession.user.role === "client") {
+        clientId = clientSession.user.id;
+      }
+    } catch (error) {
+      // Pas de session client, continuer sans lier
+    }
+
     // Déterminer le statut
     const status = eventType.requiresApproval ? "pending" : "confirmed";
 
@@ -36,6 +48,7 @@ export async function POST(request: Request) {
       data: {
         userId: eventType.userId,
         eventTypeId,
+        clientId,
         startTime: new Date(startTime),
         endTime: new Date(endTime),
         clientName,
