@@ -54,7 +54,6 @@ export const { handlers: clientHandlers, auth: clientAuth, signIn: clientSignIn,
             id: client.id,
             email: client.email,
             name: client.name || client.email,
-            role: "client",
           };
         } catch (error) {
           console.error("Client auth error:", error);
@@ -73,14 +72,12 @@ export const { handlers: clientHandlers, auth: clientAuth, signIn: clientSignIn,
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.role = "client";
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
-        session.user.role = token.role as string;
       }
       return session;
     },
