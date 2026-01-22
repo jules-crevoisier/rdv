@@ -34,7 +34,8 @@ export async function POST(request: Request) {
     try {
       const { clientAuth } = await import("@/auth-client");
       const clientSession = await clientAuth();
-      if (clientSession?.user?.id && clientSession.user.role === "client") {
+      // Si une session client existe, utiliser son ID
+      if (clientSession?.user?.id) {
         clientId = clientSession.user.id;
       }
     } catch (error) {
