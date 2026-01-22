@@ -6,8 +6,13 @@ import bcrypt from "bcryptjs";
 let prisma: any;
 async function getPrisma() {
   if (!prisma) {
-    const { prisma: prismaClient } = await import("./lib/prisma");
-    prisma = prismaClient;
+    try {
+      const { prisma: prismaClient } = await import("./lib/prisma");
+      prisma = prismaClient;
+    } catch (error) {
+      console.error("[Auth] Failed to import Prisma:", error);
+      throw error;
+    }
   }
   return prisma;
 }

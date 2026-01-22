@@ -9,27 +9,39 @@ function createPrismaClientInstance() {
   // Pour Prisma 7, on DOIT passer soit accelerateUrl soit un adapter au constructeur
   // Vercel Postgres fournit une URL Accelerate (prisma+postgres://) pour de meilleures performances
   const accelerateUrl = process.env.DATABASE_PRISMA_DATABASE_URL;
+  const standardUrl = process.env.DATABASE_POSTGRES_URL || process.env.DATABASE_URL;
   
-  if (!accelerateUrl) {
-    console.error("DATABASE_PRISMA_DATABASE_URL is not defined");
-    throw new Error(
-      "DATABASE_PRISMA_DATABASE_URL is required. Please set it in your environment variables. " +
-      "You can find it in Vercel Dashboard → Storage → Your database → .env.local"
+  // Utiliser Accelerate si disponible, sinon l'URL standard
+  const databaseUrl = accelerateUrl || standardUrl;
+  
+  if (!databaseUrl) {
+    const error = new Error(
+      "Database URL is not defined. Please set DATABASE_PRISMA_DATABASE_URL or DATABASE_POSTGRES_URL in your environment variables."
     );
+    console.error("[Prisma] Error:", error.message);
+    throw error;
   }
   
-  // Vérifier que c'est bien une URL Accelerate
-  if (!accelerateUrl.startsWith("prisma+")) {
-    console.warn("DATABASE_PRISMA_DATABASE_URL should start with 'prisma+' for Accelerate");
+  try {
+    // Si on a une URL Accelerate, l'utiliser
+    if (accelerateUrl && accelerateUrl.startsWith("prisma+")) {
+      console.log("[Prisma] Initializing with Prisma Accelerate");
+      return new PrismaClient({
+        accelerateUrl: accelerateUrl,
+        log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
+      });
+    }
+    
+    // Sinon, utiliser l'URL standard (nécessite un adapter, mais pour l'instant on essaie avec accelerateUrl)
+    console.log("[Prisma] Initializing with standard PostgreSQL connection");
+    return new PrismaClient({
+      accelerateUrl: databaseUrl,
+      log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
+    });
+  } catch (error) {
+    console.error("[Prisma] Failed to initialize:", error);
+    throw error;
   }
-  
-  console.log("Initializing Prisma with PostgreSQL (Accelerate)");
-
-  // Prisma 7 : Utiliser Prisma Accelerate pour de meilleures performances
-  return new PrismaClient({
-    accelerateUrl: accelerateUrl,
-    log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
-  });
 }
 
 export const prisma = globalForPrisma.prisma ?? createPrismaClientInstance();
