@@ -32,14 +32,11 @@ function createPrismaClientInstance() {
       });
     }
     
-    // Sinon, utiliser l'URL standard via DATABASE_URL
-    // Prisma utilisera automatiquement DATABASE_URL depuis les variables d'environnement
+    // Sinon, utiliser l'URL standard
+    // Pour Prisma 7, on doit passer l'URL via accelerateUrl même pour une URL standard
     console.log("[Prisma] Initializing with standard PostgreSQL connection");
-    // S'assurer que DATABASE_URL est définie pour le fallback
-    if (standardUrl) {
-      process.env.DATABASE_URL = standardUrl;
-    }
     return new PrismaClient({
+      accelerateUrl: standardUrl, // Utiliser accelerateUrl même pour une URL standard
       log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
     });
   } catch (error) {

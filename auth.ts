@@ -19,6 +19,7 @@ async function getPrisma() {
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
+  trustHost: true, // Nécessaire pour NextAuth v5 en développement et production
   providers: [
     CredentialsProvider({
       name: "Credentials",

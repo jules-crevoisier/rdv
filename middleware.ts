@@ -16,7 +16,7 @@ export function middleware(request: NextRequest) {
   const isLoggedIn = hasSessionCookie;
 
   // Pages publiques
-  const publicPaths = ["/login", "/register", "/book", "/client/login", "/client/register"];
+  const publicPaths = ["/login", "/register", "/book"];
   const isPublicPath = publicPaths.some((p) => path.startsWith(p));
   
   // Routes client (nécessitent une session client)
@@ -41,6 +41,11 @@ export function middleware(request: NextRequest) {
   // Si l'utilisateur est connecté et essaie d'accéder à login/register
   if (isLoggedIn && (path === "/login" || path === "/register")) {
     return NextResponse.redirect(new URL("/", request.url));
+  }
+  
+  // Rediriger /register vers /login (même page maintenant)
+  if (path === "/register") {
+    return NextResponse.redirect(new URL("/login", request.url));
   }
   
   // Si le client est connecté et essaie d'accéder à client/login ou client/register

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDate, formatTime, formatDateTime } from "@/lib/utils";
-import { Calendar, User, Mail, Phone, FileText, Trash2, Check, X } from "lucide-react";
+import { Calendar, User, Mail, Phone, FileText, Trash2, Check, X, ArrowRight, Clock } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -21,6 +21,7 @@ import {
 type AppointmentFromDB = {
   id: string;
   userId: string;
+  clientId?: string | null;
   eventTypeId: string;
   eventType: {
     id: string;
@@ -144,6 +145,16 @@ export default function AppointmentsPage() {
     return <Badge variant={variants[status] || "outline"}>{labels[status] || status}</Badge>;
   };
 
+  // Distinguer les rendez-vous où l'utilisateur est propriétaire vs client
+  const isOwner = (apt: AppointmentFromDB) => apt.userId === session?.user?.id;
+  const isClient = (apt: AppointmentFromDB) => 
+    apt.clientId === session?.user?.id || 
+    apt.clientEmail === session?.user?.email;
+
+  // Séparer les rendez-vous en deux catégories
+  const myAppointments = appointments.filter((apt) => isClient(apt) && !isOwner(apt)); // Rendez-vous pris par l'utilisateur
+  const receivedAppointments = appointments.filter((apt) => isOwner(apt)); // Rendez-vous reçus (créés par l'utilisateur)
+
   const allAppointments = appointments.sort(
     (a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
   );
@@ -157,14 +168,50 @@ export default function AppointmentsPage() {
     .filter((a) => a.status === "pending")
     .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
 
-  const renderAppointmentCard = (appointment: AppointmentFromDB) => (
-    <Card key={appointment.id}>
+  const renderAppointmentCard = (appointment: AppointmentFromDB) => {
+    const userIsClient = isClient(appointment);
+    const userIsOwner = isOwner(appointment);
+    
+    return (
+    <Card 
+      key={appointment.id} 
+      className={`relative overflow-hidden ${
+        userIsClient && !userIsOwner 
+          ? "border-l-4 border-l-primary bg-primary/5" 
+          : "border-l-4 border-l-muted"
+      }`}
+    >
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex-1">
+            <div className="flex items-center gap-2 mb-2">
+              {userIsClient && !userIsOwner && (
+                <Badge variant="default" className="text-xs font-semibold">
+                  <ArrowRight className="mr-1 h-3 w-3" />
+                  Mon rendez-vous
+                </Badge>
+              )}
+              {userIsOwner && (
+                <Badge variant="outline" className="text-xs">
+                  <User className="mr-1 h-3 w-3" />
+                  Rendez-vous reçu
+                </Badge>
+              )}
+            </div>
             <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              {appointment.clientName}
+              {userIsClient && !userIsOwner ? (
+                <>
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                    <User className="h-4 w-4" />
+                  </div>
+                  <span>Vous</span>
+                </>
+              ) : (
+                <>
+                  <User className="h-5 w-5 text-muted-foreground" />
+                  <span>{appointment.clientName}</span>
+                </>
+              )}
             </CardTitle>
             <CardDescription className="mt-1">{appointment.eventType.name}</CardDescription>
           </div>
@@ -177,15 +224,19 @@ export default function AppointmentsPage() {
             <Calendar className="h-4 w-4 text-muted-foreground" />
             <span>{formatDateTime(appointment.startTime)}</span>
           </div>
-          <div className="flex items-center gap-2 text-sm">
-            <Mail className="h-4 w-4 text-muted-foreground" />
-            <span>{appointment.clientEmail}</span>
-          </div>
-          {appointment.clientPhone && (
-            <div className="flex items-center gap-2 text-sm">
-              <Phone className="h-4 w-4 text-muted-foreground" />
-              <span>{appointment.clientPhone}</span>
-            </div>
+          {!userIsClient && (
+            <>
+              <div className="flex items-center gap-2 text-sm">
+                <Mail className="h-4 w-4 text-muted-foreground" />
+                <span>{appointment.clientEmail}</span>
+              </div>
+              {appointment.clientPhone && (
+                <div className="flex items-center gap-2 text-sm">
+                  <Phone className="h-4 w-4 text-muted-foreground" />
+                  <span>{appointment.clientPhone}</span>
+                </div>
+              )}
+            </>
           )}
           {appointment.notes && (
             <div className="flex items-start gap-2 text-sm">
@@ -206,9 +257,14 @@ export default function AppointmentsPage() {
                   <DialogDescription>Informations complètes sur le rendez-vous</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
+                  {userIsClient && !userIsOwner && (
+                    <div className="rounded-lg bg-primary/10 p-3">
+                      <p className="text-sm font-medium text-primary">Ceci est un rendez-vous que vous avez pris</p>
+                    </div>
+                  )}
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Client</p>
-                    <p className="text-lg font-semibold">{appointment.clientName}</p>
+                    <p className="text-lg font-semibold">{userIsClient && !userIsOwner ? "Vous" : appointment.clientName}</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Email</p>
@@ -244,7 +300,8 @@ export default function AppointmentsPage() {
                 </div>
               </DialogContent>
             </Dialog>
-            {appointment.status === "pending" && (
+            {/* Les actions de confirmation/annulation ne sont disponibles que pour les rendez-vous reçus */}
+            {userIsOwner && appointment.status === "pending" && (
               <>
                 <Button
                   variant="outline"
@@ -264,6 +321,7 @@ export default function AppointmentsPage() {
                 </Button>
               </>
             )}
+            {/* Les utilisateurs peuvent supprimer leurs propres rendez-vous ou ceux qu'ils ont reçus */}
             <Button
               variant="destructive"
               size="icon"
@@ -276,7 +334,8 @@ export default function AppointmentsPage() {
         </div>
       </CardContent>
     </Card>
-  );
+    );
+  };
 
   if (isLoading) {
     return (
@@ -297,8 +356,10 @@ export default function AppointmentsPage() {
         </div>
 
         <Tabs defaultValue="all" className="space-y-4">
-          <TabsList>
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="all">Tous ({allAppointments.length})</TabsTrigger>
+            <TabsTrigger value="my">Mes RDV ({myAppointments.length})</TabsTrigger>
+            <TabsTrigger value="received">Reçus ({receivedAppointments.length})</TabsTrigger>
             <TabsTrigger value="pending">En attente ({pendingAppointments.length})</TabsTrigger>
             <TabsTrigger value="upcoming">À venir ({upcomingAppointments.length})</TabsTrigger>
             <TabsTrigger value="past">Passés ({pastAppointments.length})</TabsTrigger>
@@ -316,8 +377,59 @@ export default function AppointmentsPage() {
                 </CardContent>
               </Card>
             ) : (
+              <div className="space-y-6">
+                {myAppointments.length > 0 && (
+                  <div>
+                    <h2 className="mb-4 text-lg font-semibold text-primary">Mes rendez-vous</h2>
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      {myAppointments.map(renderAppointmentCard)}
+                    </div>
+                  </div>
+                )}
+                {receivedAppointments.length > 0 && (
+                  <div>
+                    <h2 className="mb-4 text-lg font-semibold">Rendez-vous reçus</h2>
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      {receivedAppointments.map(renderAppointmentCard)}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="my" className="space-y-4">
+            {myAppointments.length === 0 ? (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <Calendar className="mb-4 h-12 w-12 text-muted-foreground" />
+                  <h3 className="mb-2 text-lg font-semibold">Aucun rendez-vous pris</h3>
+                  <p className="text-center text-muted-foreground">
+                    Les rendez-vous que vous prenez apparaîtront ici
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {allAppointments.map(renderAppointmentCard)}
+                {myAppointments.map(renderAppointmentCard)}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="received" className="space-y-4">
+            {receivedAppointments.length === 0 ? (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <Calendar className="mb-4 h-12 w-12 text-muted-foreground" />
+                  <h3 className="mb-2 text-lg font-semibold">Aucun rendez-vous reçu</h3>
+                  <p className="text-center text-muted-foreground">
+                    Les rendez-vous que d'autres personnes prennent avec vous apparaîtront ici
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {receivedAppointments.map(renderAppointmentCard)}
               </div>
             )}
           </TabsContent>

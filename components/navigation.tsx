@@ -19,6 +19,7 @@ const navigation = [
   { name: "Tableau de bord", href: "/", icon: Calendar },
   { name: "Types de rendez-vous", href: "/event-types", icon: Clock },
   { name: "Réservations", href: "/appointments", icon: Calendar },
+  { name: "Clients", href: "/clients", icon: User },
 ];
 
 export const Navigation = () => {

@@ -102,9 +102,23 @@ export const updateAvailability = async (
 };
 
 // Appointments
-export const getAppointments = async (userId: string) => {
+// Récupère les rendez-vous où l'utilisateur est soit le propriétaire (userId) soit le client (clientId ou email)
+export const getAppointments = async (userId: string, userEmail?: string) => {
+  const whereConditions: any[] = [
+    { userId }, // Rendez-vous créés par l'utilisateur (en tant qu'admin)
+    { clientId: userId }, // Rendez-vous pris par l'utilisateur (en tant que client avec clientId)
+  ];
+  
+  // Si un email est fourni, aussi chercher les rendez-vous où l'email correspond
+  // (pour les cas où un User a pris un rendez-vous mais n'a pas de Client lié)
+  if (userEmail) {
+    whereConditions.push({ clientEmail: userEmail });
+  }
+  
   return await prisma.appointment.findMany({
-    where: { userId },
+    where: {
+      OR: whereConditions,
+    },
     include: { eventType: true },
     orderBy: { startTime: "desc" },
   });

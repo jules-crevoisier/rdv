@@ -27,6 +27,7 @@ type EventTypeFromDB = {
 type AppointmentFromDB = {
   id: string;
   userId: string;
+  clientId?: string | null;
   eventTypeId: string;
   eventType: {
     id: string;
@@ -95,6 +96,12 @@ export default function DashboardPage() {
     const aptDate = new Date(apt.startTime);
     return isSameDay(aptDate, selectedDate);
   });
+
+  // Distinguer les rendez-vous où l'utilisateur est propriétaire vs client
+  const isOwner = (apt: AppointmentFromDB) => apt.userId === session?.user?.id;
+  const isClient = (apt: AppointmentFromDB) => 
+    apt.clientId === session?.user?.id || 
+    apt.clientEmail === session?.user?.email;
 
   const upcomingAppointments = appointments
     .filter((apt) => new Date(apt.startTime) > new Date() && apt.status !== "cancelled")
@@ -189,17 +196,27 @@ export default function DashboardPage() {
               {selectedDateAppointments.length > 0 && (
                 <div className="mt-4 space-y-2">
                   <p className="text-sm font-medium">Rendez-vous le {formatDate(selectedDate)}</p>
-                  {selectedDateAppointments.map((apt) => (
-                    <div key={apt.id} className="flex items-center justify-between rounded-lg border p-2">
-                      <div>
-                        <p className="font-medium">{apt.clientName}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {formatTime(apt.startTime)} - {formatTime(apt.endTime)}
-                        </p>
+                  {selectedDateAppointments.map((apt) => {
+                    const userIsClient = isClient(apt);
+                    return (
+                      <div key={apt.id} className="flex items-center justify-between rounded-lg border p-2">
+                        <div>
+                          {userIsClient ? (
+                            <>
+                              <p className="font-medium">Votre rendez-vous</p>
+                              <p className="text-xs text-muted-foreground">{apt.eventType.name}</p>
+                            </>
+                          ) : (
+                            <p className="font-medium">{apt.clientName}</p>
+                          )}
+                          <p className="text-sm text-muted-foreground">
+                            {formatTime(apt.startTime)} - {formatTime(apt.endTime)}
+                          </p>
+                        </div>
+                        {getStatusBadge(apt.status)}
                       </div>
-                      {getStatusBadge(apt.status)}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </CardContent>
@@ -213,18 +230,36 @@ export default function DashboardPage() {
             <CardContent>
               {upcomingAppointments.length > 0 ? (
                 <div className="space-y-4">
-                  {upcomingAppointments.map((apt) => (
-                    <div key={apt.id} className="flex items-center justify-between rounded-lg border p-4">
-                      <div className="flex-1">
-                        <p className="font-medium">{apt.clientName}</p>
-                        <p className="text-sm text-muted-foreground">{apt.eventType.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {formatDate(apt.startTime)} à {formatTime(apt.startTime)}
-                        </p>
+                  {upcomingAppointments.map((apt) => {
+                    const userIsOwner = isOwner(apt);
+                    const userIsClient = isClient(apt);
+                    return (
+                      <div key={apt.id} className="flex items-center justify-between rounded-lg border p-4">
+                        <div className="flex-1">
+                          {userIsClient ? (
+                            <>
+                              <p className="font-medium">Vous avez un rendez-vous</p>
+                              <p className="text-sm text-muted-foreground">{apt.eventType.name}</p>
+                            </>
+                          ) : (
+                            <>
+                              <p className="font-medium">{apt.clientName}</p>
+                              <p className="text-sm text-muted-foreground">{apt.eventType.name}</p>
+                            </>
+                          )}
+                          <p className="text-sm text-muted-foreground">
+                            {formatDate(apt.startTime)} à {formatTime(apt.startTime)}
+                          </p>
+                          {userIsClient && (
+                            <Badge variant="outline" className="mt-1 text-xs">
+                              Rendez-vous pris
+                            </Badge>
+                          )}
+                        </div>
+                        {getStatusBadge(apt.status)}
                       </div>
-                      {getStatusBadge(apt.status)}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">Aucun rendez-vous à venir</p>

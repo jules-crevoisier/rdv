@@ -10,7 +10,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Plus, Trash2, Clock, Calendar as CalendarIcon } from "lucide-react";
 import type { TimeSlot } from "@/lib/types";
 import { format } from "date-fns";
-import { fr } from "date-fns/locale/fr";
+import { fr } from "react-day-picker/locale";
 
 type DateAvailability = {
   date: string; // YYYY-MM-DD
@@ -136,6 +136,7 @@ export const AvailabilityForm = ({ dateOverrides = [], onChange }: AvailabilityF
                 selected={selectedDates}
                 onSelect={(dates) => setSelectedDates(dates || [])}
                 locale={fr}
+                weekStartsOn={1}
                 className="rounded-md border"
                 disabled={(date) => {
                   // Désactiver les dates passées

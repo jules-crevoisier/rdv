@@ -24,8 +24,7 @@ function ClientLoginContent() {
     setIsLoading(true);
 
     try {
-      // Utiliser signIn avec le basePath correct via le SessionProvider
-      // Le SessionProvider avec basePath devrait gérer cela automatiquement
+      // Utiliser signIn - le basePath est géré par le SessionProvider
       const result = await signIn("ClientCredentials", {
         email,
         password,

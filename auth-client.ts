@@ -19,6 +19,14 @@ async function getPrisma() {
 
 export const { handlers: clientHandlers, auth: clientAuth, signIn: clientSignIn, signOut: clientSignOut } = NextAuth({
   secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
+  trustHost: true, // Nécessaire pour NextAuth v5 en développement et production
+  basePath: "/api/auth/client", // Spécifier le basePath pour cette instance NextAuth
+  debug: process.env.NODE_ENV === "development", // Activer le debug en développement
+  // Configuration pour éviter les erreurs 405
+  pages: {
+    signIn: "/client/login",
+    error: "/client/login",
+  },
   providers: [
     CredentialsProvider({
       name: "ClientCredentials",
@@ -64,9 +72,6 @@ export const { handlers: clientHandlers, auth: clientAuth, signIn: clientSignIn,
   ],
   session: {
     strategy: "jwt",
-  },
-  pages: {
-    signIn: "/client/login",
   },
   callbacks: {
     async jwt({ token, user }) {
