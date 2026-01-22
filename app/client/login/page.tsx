@@ -24,6 +24,8 @@ function ClientLoginContent() {
     setIsLoading(true);
 
     try {
+      // Utiliser signIn avec le basePath correct via le SessionProvider
+      // Le SessionProvider avec basePath devrait gérer cela automatiquement
       const result = await signIn("ClientCredentials", {
         email,
         password,
@@ -33,11 +35,14 @@ function ClientLoginContent() {
 
       if (result?.error) {
         setError("Email ou mot de passe incorrect");
-      } else {
+      } else if (result?.ok) {
         router.push("/client/appointments");
         router.refresh();
+      } else {
+        setError("Une erreur est survenue lors de la connexion");
       }
     } catch (error) {
+      console.error("Login error:", error);
       setError("Une erreur est survenue");
     } finally {
       setIsLoading(false);
