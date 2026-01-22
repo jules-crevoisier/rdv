@@ -1,0 +1,65 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  password      String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  eventTypes    EventType[]
+  appointments  Appointment[]
+}
+
+model EventType {
+  id              String        @id @default(cuid())
+  userId          String
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name            String
+  description     String
+  duration        Int           // en minutes
+  color           String
+  bufferTime      Int           // en minutes
+  status          String        @default("online") // online, private, archived, closed
+  requiresApproval Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  availability    Availability?
+  appointments    Appointment[]
+}
+
+model Availability {
+  id            String    @id @default(cuid())
+  eventTypeId  String    @unique
+  eventType    EventType @relation(fields: [eventTypeId], references: [id], onDelete: Cascade)
+  timeSlots     String    // JSON string des TimeSlot[]
+  dateOverrides String    @default("[]") // JSON string des dateOverrides
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Appointment {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventTypeId   String
+  eventType     EventType @relation(fields: [eventTypeId], references: [id], onDelete: Cascade)
+  startTime     DateTime
+  endTime       DateTime
+  clientName    String
+  clientEmail   String
+  clientPhone   String?
+  notes         String?
+  status        String    @default("pending") // pending, confirmed, cancelled, completed
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}

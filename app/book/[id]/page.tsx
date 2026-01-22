@@ -1,0 +1,334 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Calendar } from "@/components/ui/calendar";
+import { Badge } from "@/components/ui/badge";
+import { formatDate, formatTime, addMinutes } from "@/lib/utils";
+import type { BookingFormData } from "@/lib/types";
+import { Clock, Calendar as CalendarIcon, User, Mail, Phone, FileText } from "lucide-react";
+
+type EventType = {
+  id: string;
+  name: string;
+  description: string;
+  duration: number;
+  bufferTime: number;
+  requiresApproval: boolean;
+  status: string;
+};
+
+export default function BookPage() {
+  const params = useParams();
+  const router = useRouter();
+  const eventTypeId = params.id as string;
+  const [eventType, setEventType] = useState<EventType | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState<string | null>(null);
+  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+  const [formData, setFormData] = useState<BookingFormData>({
+    name: "",
+    email: "",
+    phone: "",
+    notes: "",
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchEventType = async () => {
+      try {
+        const response = await fetch(`/api/event-types/public/${eventTypeId}`);
+        if (!response.ok) {
+          router.push("/");
+          return;
+        }
+        const data = await response.json();
+        setEventType(data);
+      } catch (error) {
+        router.push("/");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchEventType();
+  }, [eventTypeId, router]);
+
+  useEffect(() => {
+    const fetchSlots = async () => {
+      if (eventType && selectedDate) {
+        try {
+          const dateStr = selectedDate.toISOString().split("T")[0];
+          const response = await fetch(`/api/availability/${eventTypeId}?date=${dateStr}`);
+          if (response.ok) {
+            const data = await response.json();
+            setAvailableSlots(data.slots);
+            setSelectedTimeSlot(null);
+          }
+        } catch (error) {
+          console.error("Error fetching slots:", error);
+        }
+      }
+    };
+
+    fetchSlots();
+  }, [eventType, selectedDate, eventTypeId]);
+
+  const handleDateSelect = (date: Date | undefined) => {
+    setSelectedDate(date);
+    setSelectedTimeSlot(null);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedTimeSlot || !eventType || !formData.name || !formData.email) {
+      alert("Veuillez remplir tous les champs obligatoires et sélectionner un créneau");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const startTime = new Date(selectedTimeSlot);
+      const endTime = addMinutes(startTime, eventType.duration);
+
+      const response = await fetch("/api/appointments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          eventTypeId: eventType.id,
+          startTime: startTime.toISOString(),
+          endTime: endTime.toISOString(),
+          clientName: formData.name,
+          clientEmail: formData.email,
+          clientPhone: formData.phone || undefined,
+          notes: formData.notes || undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        alert(error.error || "Erreur lors de la réservation");
+        return;
+      }
+
+      const appointment = await response.json();
+      router.push(`/book/${eventTypeId}/confirmation?appointmentId=${appointment.id}`);
+    } catch (error) {
+      alert("Une erreur est survenue");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (isLoading || !eventType) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p>Chargement...</p>
+      </div>
+    );
+  }
+
+  if (eventType.status !== "online") {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <h1 className="mb-2 text-2xl font-bold">Ce formulaire n'est pas disponible</h1>
+          <p className="text-muted-foreground">Le formulaire de réservation est actuellement fermé.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const disabledDates = (date: Date) => {
+    return date < new Date(new Date().setHours(0, 0, 0, 0));
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-4 py-8">
+        <div className="mx-auto max-w-4xl">
+          <div className="mb-8 text-center">
+            <h1 className="mb-2 text-3xl font-bold">{eventType.name}</h1>
+            <p className="text-muted-foreground">{eventType.description}</p>
+          </div>
+
+          <div className="grid gap-8 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CalendarIcon className="h-5 w-5" />
+                  Sélectionnez une date
+                </CardTitle>
+                <CardDescription>Choisissez le jour de votre rendez-vous</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={handleDateSelect}
+                  disabled={disabledDates}
+                  className="rounded-md border"
+                />
+                {selectedDate && (
+                  <div className="mt-4">
+                    <p className="text-sm font-medium">
+                      Créneaux disponibles le {formatDate(selectedDate)}
+                    </p>
+                    {availableSlots.length === 0 ? (
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        Aucun créneau disponible pour cette date
+                      </p>
+                    ) : (
+                      <div className="mt-2 grid grid-cols-3 gap-2">
+                        {availableSlots.map((slot) => {
+                          const slotDate = new Date(slot);
+                          const isSelected = selectedTimeSlot === slot;
+                          return (
+                            <Button
+                              key={slot}
+                              type="button"
+                              variant={isSelected ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => setSelectedTimeSlot(slot)}
+                              className="text-xs"
+                            >
+                              {formatTime(slotDate)}
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-5 w-5" />
+                  Vos informations
+                </CardTitle>
+                <CardDescription>Remplissez vos coordonnées pour finaliser la réservation</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Nom complet *</Label>
+                    <Input
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      placeholder="Votre nom"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email *</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      placeholder="votre@email.com"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Téléphone</Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      placeholder="+33 6 12 34 56 78"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="notes">Notes (optionnel)</Label>
+                    <Textarea
+                      id="notes"
+                      value={formData.notes}
+                      onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                      placeholder="Informations supplémentaires..."
+                      rows={3}
+                    />
+                  </div>
+
+                  {selectedTimeSlot && (
+                    <div className="rounded-lg border bg-muted p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium">Résumé</p>
+                          <p className="text-sm text-muted-foreground">
+                            {formatDate(selectedTimeSlot)} à {formatTime(selectedTimeSlot)}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            Durée: {eventType.duration} minutes
+                          </p>
+                        </div>
+                        <Badge variant="outline" className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {eventType.duration} min
+                        </Badge>
+                      </div>
+                    </div>
+                  )}
+
+                  <Button type="submit" className="w-full" disabled={!selectedTimeSlot || isSubmitting}>
+                    {isSubmitting ? "Réservation en cours..." : "Confirmer la réservation"}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card className="mt-8">
+            <CardHeader>
+              <CardTitle>Détails du rendez-vous</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm font-medium">Durée</p>
+                    <p className="text-sm text-muted-foreground">{eventType.duration} minutes</p>
+                  </div>
+                </div>
+                {eventType.bufferTime > 0 && (
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium">Temps de pause</p>
+                      <p className="text-sm text-muted-foreground">{eventType.bufferTime} minutes</p>
+                    </div>
+                  </div>
+                )}
+                {eventType.requiresApproval && (
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium">Approbation</p>
+                      <p className="text-sm text-muted-foreground">Requis</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
