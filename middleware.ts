@@ -1,9 +1,19 @@
-import { auth } from "@/auth";
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
-export default auth((req) => {
-  const path = req.nextUrl.pathname;
-  const isLoggedIn = !!req.auth;
+export function middleware(request: NextRequest) {
+  const path = request.nextUrl.pathname;
+  
+  // Vérifier si l'utilisateur a un cookie de session NextAuth
+  // NextAuth v5 utilise "authjs.session-token" (ou variantes sécurisées)
+  // Vérifier tous les noms de cookies possibles
+  const hasSessionCookie = 
+    request.cookies.has("authjs.session-token") ||
+    request.cookies.has("__Secure-authjs.session-token") ||
+    request.cookies.has("next-auth.session-token") ||
+    request.cookies.has("__Secure-next-auth.session-token");
+  
+  const isLoggedIn = hasSessionCookie;
 
   // Pages publiques
   const publicPaths = ["/login", "/register", "/book"];
@@ -11,16 +21,16 @@ export default auth((req) => {
 
   // Si l'utilisateur n'est pas connecté et essaie d'accéder à une page privée
   if (!isLoggedIn && !isPublicPath) {
-    return NextResponse.redirect(new URL("/login", req.url));
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
   // Si l'utilisateur est connecté et essaie d'accéder à login/register
   if (isLoggedIn && (path === "/login" || path === "/register")) {
-    return NextResponse.redirect(new URL("/", req.url));
+    return NextResponse.redirect(new URL("/", request.url));
   }
 
   return NextResponse.next();
-});
+}
 
 export const config = {
   matcher: [
