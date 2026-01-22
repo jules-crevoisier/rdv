@@ -8,37 +8,55 @@ type EventTypeWithDuration = {
   bufferTime: number;
 };
 
+// Fonction pour formater une date en YYYY-MM-DD en utilisant le fuseau horaire local
+const formatDateLocal = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 export const getAvailableTimeSlotsForEventType = async (
   eventType: EventTypeWithDuration,
   date: Date
 ): Promise<string[]> => {
   const availability = await getAvailability(eventType.id);
-  if (!availability) return [];
+  if (!availability) {
+    console.log("[getAvailableTimeSlotsForEventType] Aucune disponibilité trouvée pour", eventType.id);
+    return [];
+  }
 
-  const timeSlots: TimeSlot[] = JSON.parse(availability.timeSlots);
-  const dayOfWeek = date.getDay();
-  const dayTimeSlots = timeSlots.filter((slot) => slot.day === dayOfWeek);
-
-  if (dayTimeSlots.length === 0) return [];
-
-  // Vérifier les overrides de date
+  // Vérifier les disponibilités par date spécifique
   const dateOverrides: any[] = JSON.parse(availability.dateOverrides || "[]");
-  const dateStr = date.toISOString().split("T")[0];
-  const dateOverride = dateOverrides.find((d) => d.date === dateStr);
+  // Utiliser le format local pour éviter les problèmes de fuseau horaire
+  const dateStr = formatDateLocal(date);
+  console.log("[getAvailableTimeSlotsForEventType] Recherche pour la date:", dateStr);
+  console.log("[getAvailableTimeSlotsForEventType] Dates disponibles:", dateOverrides.map(d => d.date));
   
-  if (dateOverride) {
-    if (!dateOverride.available) return [];
-    if (dateOverride.timeSlots && dateOverride.timeSlots.length > 0) {
-      return generateTimeSlotsForDate(
-        dateOverride.timeSlots,
+  const dateAvailability = dateOverrides.find((d) => d.date === dateStr);
+  
+  if (dateAvailability) {
+    console.log("[getAvailableTimeSlotsForEventType] Disponibilité trouvée:", {
+      available: dateAvailability.available,
+      timeSlotsCount: dateAvailability.timeSlots?.length || 0
+    });
+    
+    if (!dateAvailability.available) return [];
+    if (dateAvailability.timeSlots && dateAvailability.timeSlots.length > 0) {
+      const slots = await generateTimeSlotsForDate(
+        dateAvailability.timeSlots,
         eventType,
         date
       );
+      console.log("[getAvailableTimeSlotsForEventType] Créneaux générés:", slots.length);
+      return slots;
     }
+    return [];
   }
 
-  // Générer les créneaux disponibles
-  return generateTimeSlotsForDate(dayTimeSlots, eventType, date);
+  console.log("[getAvailableTimeSlotsForEventType] Aucune disponibilité trouvée pour cette date");
+  // Si aucune disponibilité spécifique pour cette date, retourner vide
+  return [];
 };
 
 const generateTimeSlotsForDate = async (

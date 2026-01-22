@@ -66,7 +66,12 @@ export default function BookPage() {
     const fetchSlots = async () => {
       if (eventType && selectedDate) {
         try {
-          const dateStr = selectedDate.toISOString().split("T")[0];
+          // Formater la date en YYYY-MM-DD en utilisant le fuseau horaire local
+          const year = selectedDate.getFullYear();
+          const month = String(selectedDate.getMonth() + 1).padStart(2, "0");
+          const day = String(selectedDate.getDate()).padStart(2, "0");
+          const dateStr = `${year}-${month}-${day}`;
+          
           const response = await fetch(`/api/availability/${eventTypeId}?date=${dateStr}`);
           if (response.ok) {
             const data = await response.json();

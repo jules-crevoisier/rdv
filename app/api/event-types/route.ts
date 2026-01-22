@@ -39,11 +39,17 @@ export async function POST(request: Request) {
     const body = await request.json();
     console.log("[POST /api/event-types] Données reçues:", JSON.stringify(body, null, 2));
     
-    const { name, description, duration, color, bufferTime, status, requiresApproval, timeSlots } = body;
+    const { name, description, duration, color, bufferTime, status, requiresApproval, dateOverrides } = body;
 
-    if (!name || !description || !duration || !timeSlots || !Array.isArray(timeSlots)) {
+    if (!name || !description || !duration) {
       console.log("[POST /api/event-types] Erreur: Données invalides");
       return NextResponse.json({ error: "Données invalides" }, { status: 400 });
+    }
+
+    // dateOverrides est optionnel, mais si fourni, doit être un tableau
+    if (dateOverrides && !Array.isArray(dateOverrides)) {
+      console.log("[POST /api/event-types] Erreur: dateOverrides doit être un tableau");
+      return NextResponse.json({ error: "dateOverrides doit être un tableau" }, { status: 400 });
     }
 
     console.log("[POST /api/event-types] Création du type avec userId:", session.user.id);
@@ -56,7 +62,7 @@ export async function POST(request: Request) {
       bufferTime: parseInt(bufferTime) || 0,
       status: status || "online",
       requiresApproval: requiresApproval || false,
-      timeSlots,
+      dateOverrides: dateOverrides || [],
     });
 
     console.log("[POST /api/event-types] Type créé avec succès:", eventType.id);

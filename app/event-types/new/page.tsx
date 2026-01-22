@@ -43,7 +43,7 @@ export default function NewEventTypePage() {
     status: "online" as "online" | "private" | "archived" | "closed",
     requiresApproval: false,
   });
-  const [timeSlots, setTimeSlots] = useState<Record<number, TimeSlot[]>>({});
+  const [dateAvailabilities, setDateAvailabilities] = useState<Array<{ date: string; available: boolean; timeSlots: TimeSlot[] }>>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -58,25 +58,19 @@ export default function NewEventTypePage() {
       return;
     }
 
-    // Vérifier qu'au moins une plage horaire est définie
-    const hasTimeSlots = Object.values(timeSlots).some((slots) => slots.length > 0);
-    if (!hasTimeSlots) {
-      alert("Veuillez définir au moins une plage horaire");
+    // Vérifier qu'au moins une date avec disponibilité est définie
+    const hasAvailabilities = dateAvailabilities.some((a) => a.available && a.timeSlots.length > 0);
+    if (!hasAvailabilities) {
+      alert("Veuillez configurer au moins une date avec des plages horaires");
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      // Rassembler tous les créneaux
-      const allTimeSlots: TimeSlot[] = [];
-      Object.values(timeSlots).forEach((slots) => {
-        allTimeSlots.push(...slots);
-      });
-
       console.log("[NewEventTypePage] Envoi des données:", {
         ...formData,
-        timeSlots: allTimeSlots,
+        dateOverrides: dateAvailabilities,
       });
 
       const response = await fetch("/api/event-types", {
@@ -84,7 +78,7 @@ export default function NewEventTypePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
-          timeSlots: allTimeSlots,
+          dateOverrides: dateAvailabilities,
         }),
       });
 
@@ -249,7 +243,7 @@ export default function NewEventTypePage() {
             </CardContent>
           </Card>
 
-          <AvailabilityForm timeSlots={timeSlots} onChange={setTimeSlots} />
+          <AvailabilityForm dateOverrides={dateAvailabilities} onChange={setDateAvailabilities} />
 
           <div className="flex justify-end gap-4 pt-4">
             <Link href="/event-types">

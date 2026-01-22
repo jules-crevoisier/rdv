@@ -8,9 +8,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   try {
     const { id } = await params;
     const { searchParams } = new URL(request.url);
-    const date = searchParams.get("date");
+    const dateParam = searchParams.get("date");
 
-    if (!date) {
+    if (!dateParam) {
       return NextResponse.json({ error: "Date requise" }, { status: 400 });
     }
 
@@ -19,13 +19,18 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: "Non trouvé" }, { status: 404 });
     }
 
+    // Créer la date en utilisant le format YYYY-MM-DD en local (pas UTC)
+    // Pour éviter les problèmes de fuseau horaire, on parse manuellement
+    const [year, month, day] = dateParam.split("-").map(Number);
+    const date = new Date(year, month - 1, day);
+
     const slots = await getAvailableTimeSlotsForEventType(
       {
         id: eventType.id,
         duration: eventType.duration,
         bufferTime: eventType.bufferTime,
       },
-      new Date(date)
+      date
     );
 
     return NextResponse.json({ slots });

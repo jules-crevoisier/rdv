@@ -26,7 +26,7 @@ export const createEventType = async (data: {
   bufferTime: number;
   status: string;
   requiresApproval: boolean;
-  timeSlots: TimeSlot[];
+  dateOverrides?: Array<{ date: string; available: boolean; timeSlots: TimeSlot[] }>;
 }) => {
   const eventType = await prisma.eventType.create({
     data: {
@@ -40,8 +40,8 @@ export const createEventType = async (data: {
       requiresApproval: data.requiresApproval,
       availability: {
         create: {
-          timeSlots: JSON.stringify(data.timeSlots),
-          dateOverrides: "[]",
+          timeSlots: JSON.stringify([]), // Plus utilisé, on utilise uniquement les dates spécifiques
+          dateOverrides: JSON.stringify(data.dateOverrides || []),
         },
       },
     },
