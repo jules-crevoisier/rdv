@@ -22,7 +22,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { eventTypeId, startTime, endTime, clientName, clientEmail, clientPhone, notes } = body;
+    const { eventTypeId, startTime, endTime, clientName, clientEmail, clientPhone, notes, location, meetingType } = body;
 
     // Récupérer le type de rendez-vous pour obtenir le userId
     const eventType = await getPublicEventType(eventTypeId);
@@ -56,6 +56,33 @@ export async function POST(request: Request) {
     // Déterminer le statut
     const status = eventType.requiresApproval ? "pending" : "confirmed";
 
+    // Déterminer le type de rendez-vous (utiliser celui fourni ou celui de l'EventType)
+    const finalMeetingType = meetingType || eventType.meetingType || "in-person";
+    
+    // Déterminer le lieu (utiliser celui fourni ou celui de l'EventType)
+    const finalLocation = location || eventType.location || null;
+
+    // Générer un lien de visioconférence automatiquement si c'est un rendez-vous en distanciel
+    let videoLink: string | null = null;
+    if (finalMeetingType === "video") {
+      // Si un lien personnalisé est fourni dans le champ location, l'utiliser
+      if (finalLocation && (finalLocation.startsWith("http://") || finalLocation.startsWith("https://"))) {
+        videoLink = finalLocation;
+      } else {
+        // Sinon, générer un lien Jitsi Meet (alternative open source à Google Meet)
+        // Jitsi permet de générer des liens valides facilement
+        const generateJitsiRoomName = () => {
+          const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+          return Array.from({ length: 22 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+        };
+        const roomName = generateJitsiRoomName();
+        videoLink = `https://meet.jit.si/${roomName}`;
+        
+        // Note: Pour utiliser Google Meet, il faudrait intégrer l'API Google Calendar
+        // et créer un événement avec conferenceData pour obtenir un lien Meet valide
+      }
+    }
+
     // Préparer les données de création
     const appointmentData: any = {
       userId: eventType.userId,
@@ -66,6 +93,9 @@ export async function POST(request: Request) {
       clientEmail,
       clientPhone: clientPhone || null,
       notes: notes || null,
+      location: finalLocation,
+      meetingType: finalMeetingType,
+      videoLink,
       status,
     };
 

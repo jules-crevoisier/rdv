@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     console.log("[POST /api/event-types] Données reçues:", JSON.stringify(body, null, 2));
     
-    const { name, description, duration, color, bufferTime, status, requiresApproval, dateOverrides } = body;
+    const { name, description, duration, color, bufferTime, status, requiresApproval, location, meetingType, dateOverrides } = body;
 
     if (!name || !description || !duration) {
       console.log("[POST /api/event-types] Erreur: Données invalides");
@@ -62,13 +62,24 @@ export async function POST(request: Request) {
       bufferTime: parseInt(bufferTime) || 0,
       status: status || "online",
       requiresApproval: requiresApproval || false,
+      location: location || null,
+      meetingType: meetingType || "in-person",
       dateOverrides: dateOverrides || [],
     });
 
     console.log("[POST /api/event-types] Type créé avec succès:", eventType.id);
     return NextResponse.json(eventType, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     console.error("[POST /api/event-types] Erreur:", error);
-    return NextResponse.json({ error: "Erreur lors de la création" }, { status: 500 });
+    const errorMessage = error?.message || "Erreur lors de la création";
+    const errorDetails = process.env.NODE_ENV === "development" ? error?.stack : undefined;
+    return NextResponse.json(
+      { 
+        error: errorMessage,
+        details: errorDetails,
+        code: error?.code
+      }, 
+      { status: 500 }
+    );
   }
 }

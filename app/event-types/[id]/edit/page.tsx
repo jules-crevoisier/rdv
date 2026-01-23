@@ -31,6 +31,8 @@ type EventTypeFromDB = {
   bufferTime: number;
   status: string;
   requiresApproval: boolean;
+  location?: string | null;
+  meetingType?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -99,6 +101,8 @@ export default function EditEventTypePage() {
           bufferTime: formData.bufferTime,
           status: formData.status,
           requiresApproval: formData.requiresApproval,
+          location: formData.location || null,
+          meetingType: formData.meetingType || "in-person",
         }),
       });
 
@@ -325,6 +329,40 @@ export default function EditEventTypePage() {
                 <Label htmlFor="requiresApproval" className="cursor-pointer text-sm">
                   Nécessite une approbation manuelle
                 </Label>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="meetingType" className="text-sm">Type de rendez-vous</Label>
+                <Select
+                  value={formData.meetingType || "in-person"}
+                  onValueChange={(value: "in-person" | "video") => setFormData({ ...formData, meetingType: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="in-person">En présentiel</SelectItem>
+                    <SelectItem value="video">En visioconférence</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="location" className="text-sm">Lieu (optionnel)</Label>
+                <Input
+                  id="location"
+                  value={formData.location || ""}
+                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                  placeholder={(formData.meetingType || "in-person") === "video" ? "Ex: https://meet.google.com/xxx-yyyy-zzz (optionnel)" : "Ex: 123 Rue de la Paix, Paris"}
+                  className="text-sm sm:text-base"
+                />
+                {(formData.meetingType || "in-person") === "video" && (
+                  <p className="text-xs text-muted-foreground">
+                    {(formData.location || "").startsWith("http://") || (formData.location || "").startsWith("https://")
+                      ? "Le lien personnalisé sera utilisé pour tous les rendez-vous"
+                      : "Un lien Jitsi Meet sera généré automatiquement pour chaque rendez-vous. Vous pouvez aussi saisir un lien Google Meet personnalisé ci-dessus."}
+                  </p>
+                )}
               </div>
             </CardContent>
           </Card>

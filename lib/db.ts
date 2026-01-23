@@ -26,6 +26,8 @@ export const createEventType = async (data: {
   bufferTime: number;
   status: string;
   requiresApproval: boolean;
+  location?: string;
+  meetingType?: string;
   dateOverrides?: Array<{ date: string; available: boolean; timeSlots: TimeSlot[] }>;
 }) => {
   const eventType = await prisma.eventType.create({
@@ -38,6 +40,8 @@ export const createEventType = async (data: {
       bufferTime: data.bufferTime,
       status: data.status,
       requiresApproval: data.requiresApproval,
+      location: data.location || null,
+      meetingType: data.meetingType || "in-person",
       availability: {
         create: {
           timeSlots: JSON.stringify([]), // Plus utilisé, on utilise uniquement les dates spécifiques
@@ -61,6 +65,8 @@ export const updateEventType = async (
     bufferTime?: number;
     status?: string;
     requiresApproval?: boolean;
+    location?: string;
+    meetingType?: string;
   }
 ) => {
   return await prisma.eventType.updateMany({

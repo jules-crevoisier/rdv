@@ -32,6 +32,8 @@ model EventType {
   bufferTime      Int           // en minutes
   status          String        @default("online") // online, private, archived, closed
   requiresApproval Boolean       @default(false)
+  location        String?       // Lieu par défaut du rendez-vous
+  meetingType     String        @default("in-person") // in-person, video
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
   availability    Availability?
@@ -73,6 +75,9 @@ model Appointment {
   clientEmail   String
   clientPhone   String?
   notes         String?
+  location      String?   // Lieu spécifique du rendez-vous (peut surcharger celui de l'EventType)
+  meetingType   String    @default("in-person") // in-person, video
+  videoLink     String?   // Lien visio généré automatiquement pour les rendez-vous en distanciel
   status        String    @default("pending") // pending, confirmed, cancelled, completed
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt

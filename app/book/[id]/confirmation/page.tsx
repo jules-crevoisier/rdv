@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatDateTime } from "@/lib/utils";
-import { CheckCircle, Calendar, User, Mail, Phone } from "lucide-react";
+import { CheckCircle, Calendar, User, Mail, Phone, MapPin, Video, ExternalLink } from "lucide-react";
 import Link from "next/link";
 
 type AppointmentData = {
@@ -21,6 +21,9 @@ type AppointmentData = {
   clientEmail: string;
   clientPhone?: string | null;
   notes?: string | null;
+  location?: string | null;
+  meetingType?: string;
+  videoLink?: string | null;
   status: string;
   createdAt: string;
   updatedAt: string;
@@ -149,6 +152,34 @@ const ConfirmationContent = () => {
                     <div className="flex-1 min-w-0">
                       <p className="text-xs sm:text-sm font-medium text-muted-foreground">Téléphone</p>
                       <p className="text-base sm:text-lg font-semibold break-words">{appointment.clientPhone}</p>
+                    </div>
+                  </div>
+                )}
+
+                {appointment.location && (
+                  <div className="flex items-start sm:items-center gap-3">
+                    <MapPin className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground mt-0.5 sm:mt-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs sm:text-sm font-medium text-muted-foreground">Lieu</p>
+                      <p className="text-base sm:text-lg font-semibold break-words">{appointment.location}</p>
+                    </div>
+                  </div>
+                )}
+
+                {appointment.meetingType === "video" && appointment.videoLink && (
+                  <div className="flex items-start sm:items-center gap-3">
+                    <Video className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground mt-0.5 sm:mt-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs sm:text-sm font-medium text-muted-foreground">Lien de visioconférence</p>
+                      <a
+                        href={appointment.videoLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-base sm:text-lg font-semibold text-primary hover:underline break-words flex items-center gap-1"
+                      >
+                        {appointment.videoLink}
+                        <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4" />
+                      </a>
                     </div>
                   </div>
                 )}

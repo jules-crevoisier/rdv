@@ -24,6 +24,8 @@ type EventType = {
   bufferTime: number;
   requiresApproval: boolean;
   status: string;
+  location?: string | null;
+  meetingType?: string;
 };
 
 export default function BookPage() {

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDate, formatTime, formatDateTime } from "@/lib/utils";
-import { Calendar, User, Mail, Phone, FileText, Trash2, Check, X, ArrowRight, Clock } from "lucide-react";
+import { Calendar, User, Mail, Phone, FileText, Trash2, Check, X, ArrowRight, Clock, MapPin, Video, ExternalLink } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -33,6 +33,9 @@ type AppointmentFromDB = {
   clientEmail: string;
   clientPhone?: string | null;
   notes?: string | null;
+  location?: string | null;
+  meetingType?: string;
+  videoLink?: string | null;
   status: string;
   createdAt: string;
   updatedAt: string;
@@ -238,6 +241,26 @@ export default function AppointmentsPage() {
               )}
             </>
           )}
+          {appointment.location && (
+            <div className="flex items-center gap-2 text-sm">
+              <MapPin className="h-4 w-4 text-muted-foreground" />
+              <span className="text-muted-foreground">{appointment.location}</span>
+            </div>
+          )}
+          {appointment.meetingType === "video" && appointment.videoLink && (
+            <div className="flex items-center gap-2 text-sm">
+              <Video className="h-4 w-4 text-muted-foreground" />
+              <a
+                href={appointment.videoLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline flex items-center gap-1"
+              >
+                Lien visio
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
+          )}
           {appointment.notes && (
             <div className="flex items-start gap-2 text-sm">
               <FileText className="h-4 w-4 text-muted-foreground mt-0.5" />
@@ -287,6 +310,26 @@ export default function AppointmentsPage() {
                       Durée: {formatTime(appointment.startTime)} - {formatTime(appointment.endTime)}
                     </p>
                   </div>
+                  {appointment.location && (
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Lieu</p>
+                      <p className="text-sm">{appointment.location}</p>
+                    </div>
+                  )}
+                  {appointment.meetingType === "video" && appointment.videoLink && (
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Lien de visioconférence</p>
+                      <a
+                        href={appointment.videoLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-primary hover:underline flex items-center gap-1"
+                      >
+                        {appointment.videoLink}
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </div>
+                  )}
                   {appointment.notes && (
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Notes</p>

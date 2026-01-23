@@ -42,6 +42,8 @@ export default function NewEventTypePage() {
     bufferTime: 0,
     status: "online" as "online" | "private" | "archived" | "closed",
     requiresApproval: false,
+    location: "",
+    meetingType: "in-person" as "in-person" | "video",
   });
   const [dateAvailabilities, setDateAvailabilities] = useState<Array<{ date: string; available: boolean; timeSlots: TimeSlot[] }>>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -77,7 +79,15 @@ export default function NewEventTypePage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...formData,
+          name: formData.name,
+          description: formData.description,
+          duration: formData.duration,
+          color: formData.color,
+          bufferTime: formData.bufferTime,
+          status: formData.status,
+          requiresApproval: formData.requiresApproval,
+          location: formData.location || null,
+          meetingType: formData.meetingType || "in-person",
           dateOverrides: dateAvailabilities,
         }),
       });
@@ -292,6 +302,39 @@ export default function NewEventTypePage() {
                 <Label htmlFor="requiresApproval" className="cursor-pointer">
                   Nécessite une approbation manuelle
                 </Label>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="meetingType">Type de rendez-vous</Label>
+                <Select
+                  value={formData.meetingType}
+                  onValueChange={(value: "in-person" | "video") => setFormData({ ...formData, meetingType: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="in-person">En présentiel</SelectItem>
+                    <SelectItem value="video">En visioconférence</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="location">Lieu (optionnel)</Label>
+                <Input
+                  id="location"
+                  value={formData.location}
+                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                  placeholder={formData.meetingType === "video" ? "Ex: https://meet.google.com/xxx-yyyy-zzz (optionnel)" : "Ex: 123 Rue de la Paix, Paris"}
+                />
+                {formData.meetingType === "video" && (
+                  <p className="text-xs text-muted-foreground">
+                    {formData.location && (formData.location.startsWith("http://") || formData.location.startsWith("https://"))
+                      ? "Le lien personnalisé sera utilisé pour tous les rendez-vous"
+                      : "Un lien Jitsi Meet sera généré automatiquement pour chaque rendez-vous. Vous pouvez aussi saisir un lien Google Meet personnalisé ci-dessus."}
+                  </p>
+                )}
               </div>
             </CardContent>
           </Card>
