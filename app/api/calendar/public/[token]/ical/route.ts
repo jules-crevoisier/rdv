@@ -56,19 +56,53 @@ export async function GET(
         return date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
       };
 
+      // Formater la date et l'heure en français
+      const formatDateTime = (date: Date) => {
+        return date.toLocaleString("fr-FR", {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+      };
+
+      const formatTime = (date: Date) => {
+        return date.toLocaleTimeString("fr-FR", {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+      };
+
+      // Utiliser le nom du client comme titre de l'événement
+      const summary = appointment.clientName || appointment.eventType.name;
+      
+      // Construire la description avec tous les détails
+      let description = "";
+      description += `Client: ${appointment.clientName}\r\n`;
+      description += `Email: ${appointment.clientEmail}\r\n`;
+      if (appointment.clientPhone) {
+        description += `Téléphone: ${appointment.clientPhone}\r\n`;
+      }
+      description += `Type de rendez-vous: ${appointment.eventType.name}\r\n`;
+      description += `Date et heure: ${formatDateTime(startDate)}\r\n`;
+      description += `Durée: ${formatTime(startDate)} - ${formatTime(endDate)}\r\n`;
+      
+      if (appointment.eventType.description) {
+        description += `\r\n${appointment.eventType.description}\r\n`;
+      }
+      
+      if (appointment.notes) {
+        description += `\r\nNotes: ${appointment.notes}\r\n`;
+      }
+
       icalContent += "BEGIN:VEVENT\r\n";
       icalContent += `UID:${appointment.id}@reservy\r\n`;
       icalContent += `DTSTART:${formatICalDate(startDate)}\r\n`;
       icalContent += `DTEND:${formatICalDate(endDate)}\r\n`;
-      icalContent += `SUMMARY:${appointment.eventType.name}\r\n`;
-      
-      if (appointment.eventType.description) {
-        icalContent += `DESCRIPTION:${appointment.eventType.description.replace(/\r\n/g, "\\n").replace(/\n/g, "\\n")}\r\n`;
-      }
-      
-      if (appointment.notes) {
-        icalContent += `DESCRIPTION:${appointment.notes.replace(/\r\n/g, "\\n").replace(/\n/g, "\\n")}\r\n`;
-      }
+      icalContent += `SUMMARY:${summary.replace(/[,;\\]/g, "")}\r\n`;
+      icalContent += `DESCRIPTION:${description.replace(/\r\n/g, "\\n").replace(/\n/g, "\\n").replace(/,/g, "\\,").replace(/;/g, "\\;")}\r\n`;
 
       icalContent += `STATUS:${appointment.status === "confirmed" ? "CONFIRMED" : "TENTATIVE"}\r\n`;
       icalContent += `CREATED:${formatICalDate(new Date(appointment.createdAt))}\r\n`;
