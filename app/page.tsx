@@ -60,6 +60,27 @@ export default function DashboardPage() {
   const [appointments, setAppointments] = useState<AppointmentFromDB[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isLoading, setIsLoading] = useState(true);
+  const [calendarToken, setCalendarToken] = useState<string | null>(null);
+  const [icalUrl, setIcalUrl] = useState<string>("");
+
+  useEffect(() => {
+    const fetchCalendarToken = async () => {
+      if (session?.user?.id) {
+        try {
+          const response = await fetch("/api/calendar/generate-token");
+          if (response.ok) {
+            const data = await response.json();
+            setCalendarToken(data.token);
+            setIcalUrl(`${window.location.origin}/api/calendar/public/${data.token}/ical`);
+          }
+        } catch (error) {
+          console.error("Error fetching calendar token:", error);
+        }
+      }
+    };
+
+    fetchCalendarToken();
+  }, [session]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -171,11 +192,11 @@ export default function DashboardPage() {
                   </DialogHeader>
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label>URL du calendrier</Label>
+                      <Label>URL du calendrier (publique)</Label>
                       <div className="flex gap-2">
                         <Input
                           readOnly
-                          value={session?.user?.id ? `${typeof window !== 'undefined' ? window.location.origin : ''}/api/calendar/${session.user.id}/ical` : ''}
+                          value={icalUrl}
                           className="font-mono text-xs"
                           id="ical-url-input"
                         />
@@ -183,10 +204,8 @@ export default function DashboardPage() {
                           variant="outline"
                           size="icon"
                           onClick={async () => {
-                            if (!session?.user?.id) return;
-                            const url = `${window.location.origin}/api/calendar/${session.user.id}/ical`;
                             try {
-                              await navigator.clipboard.writeText(url);
+                              await navigator.clipboard.writeText(icalUrl);
                               alert("Lien copié dans le presse-papiers !");
                             } catch (err) {
                               // Fallback pour les navigateurs qui ne supportent pas clipboard API
@@ -201,7 +220,32 @@ export default function DashboardPage() {
                         >
                           <Copy className="h-4 w-4" />
                         </Button>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={async () => {
+                            try {
+                              const response = await fetch("/api/calendar/generate-token", {
+                                method: "POST",
+                              });
+                              if (response.ok) {
+                                const data = await response.json();
+                                setCalendarToken(data.token);
+                                setIcalUrl(`${window.location.origin}/api/calendar/public/${data.token}/ical`);
+                                alert("Nouveau token généré !");
+                              }
+                            } catch (error) {
+                              alert("Erreur lors de la génération du token");
+                            }
+                          }}
+                          title="Régénérer le token"
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
                       </div>
+                      <p className="text-xs text-muted-foreground">
+                        Cette URL est publique et peut être utilisée avec Google Calendar, Outlook, etc.
+                      </p>
                     </div>
                     <div className="rounded-lg bg-muted p-4">
                       <p className="text-sm font-medium mb-2">Instructions :</p>
@@ -382,7 +426,7 @@ export default function DashboardPage() {
                             {formatDate(apt.startTime)} à {formatTime(apt.startTime)}
                           </p>
                         </div>
-                        <div className="ml-2 flex-shrink-0">
+                        <div className="ml-2 shrink-0">
                           {getStatusBadge(apt.status)}
                         </div>
                       </div>

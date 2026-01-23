@@ -16,7 +16,7 @@ export function middleware(request: NextRequest) {
   const isLoggedIn = hasSessionCookie;
 
   // Pages publiques
-  const publicPaths = ["/login", "/register", "/book"];
+  const publicPaths = ["/login", "/register", "/book", "/api/calendar/public"];
   const isPublicPath = publicPaths.some((p) => path.startsWith(p));
   
   // Routes client (nécessitent une session client)
