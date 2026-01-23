@@ -163,9 +163,21 @@ export const updateAppointment = async (
   });
 };
 
-export const deleteAppointment = async (id: string, userId: string) => {
+export const deleteAppointment = async (id: string, userId: string, userEmail?: string) => {
+  const whereConditions: any[] = [
+    { id, userId }, // Rendez-vous créés par l'utilisateur (en tant qu'admin)
+    { id, clientId: userId }, // Rendez-vous pris par l'utilisateur (en tant que client avec clientId)
+  ];
+  
+  // Si un email est fourni, aussi chercher les rendez-vous où l'email correspond
+  if (userEmail) {
+    whereConditions.push({ id, clientEmail: userEmail });
+  }
+  
   return await prisma.appointment.deleteMany({
-    where: { id, userId },
+    where: {
+      OR: whereConditions,
+    },
   });
 };
 

@@ -16,12 +16,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const navigation = [
   { name: "Tableau de bord", href: "/", icon: Calendar },
-  { name: "Types de rendez-vous", href: "/event-types", icon: Clock },
+  { name: "Créneaux de réservation", href: "/event-types", icon: Clock },
   { name: "Réservations", href: "/appointments", icon: Calendar },
-  { name: "Clients", href: "/clients", icon: User },
 ];
 
 export const Navigation = () => {
@@ -84,6 +84,7 @@ export const Navigation = () => {
             </div>
           </div>
           <div className="flex items-center gap-2 md:gap-4">
+            <ThemeToggle />
             {session?.user && (
               <>
                 {/* Desktop User Menu */}
@@ -166,13 +167,16 @@ export const Navigation = () => {
               );
             })}
             <div className="pt-4 border-t space-y-2">
-              <div className="px-4 py-2">
-                <p className="text-sm font-medium">
-                  {session.user.name || "Utilisateur"}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {session.user.email}
-                </p>
+              <div className="px-4 py-2 flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">
+                    {session.user.name || "Utilisateur"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {session.user.email}
+                  </p>
+                </div>
+                <ThemeToggle />
               </div>
               <button
                 onClick={() => {

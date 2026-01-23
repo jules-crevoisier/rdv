@@ -195,11 +195,11 @@ export default function EventTypesPage() {
   };
 
   const formatTimeSlots = (timeSlotsString: string | undefined): string => {
-    if (!timeSlotsString) return "Aucune plage horaire";
+    if (!timeSlotsString) return "";
     
     try {
       const timeSlots: TimeSlot[] = JSON.parse(timeSlotsString);
-      if (timeSlots.length === 0) return "Aucune plage horaire";
+      if (timeSlots.length === 0) return "";
 
       const daysOfWeek = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
       const slotsByDay: Record<number, TimeSlot[]> = {};
@@ -310,7 +310,7 @@ export default function EventTypesPage() {
       <div className="space-y-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold">Types de rendez-vous</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold">Créneaux de réservation</h1>
             <p className="text-sm sm:text-base text-muted-foreground">Gérez vos différents types de rendez-vous</p>
           </div>
           <Link href="/event-types/new" className="w-full sm:w-auto">
@@ -415,12 +415,13 @@ export default function EventTypesPage() {
                         <span className="font-medium">{eventType.bufferTime} minutes</span>
                       </div>
                     )}
-                    <div className="space-y-1">
-                      <span className="text-xs text-muted-foreground">Plages horaires</span>
-                      <p className="text-xs font-medium text-foreground">
-                        {formatTimeSlots(eventType.availability?.timeSlots)}
-                      </p>
-                    </div>
+                    {formatTimeSlots(eventType.availability?.timeSlots) && (
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-foreground">
+                          {formatTimeSlots(eventType.availability?.timeSlots)}
+                        </p>
+                      </div>
+                    )}
                     {(() => {
                       const upcomingDates = getUpcomingAppointmentDates(eventType.id);
                       if (upcomingDates.length > 0) {

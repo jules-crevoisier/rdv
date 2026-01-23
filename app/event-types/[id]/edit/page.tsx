@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Minus, Plus } from "lucide-react";
 import Link from "next/link";
 
 const colors = [
@@ -180,16 +180,43 @@ export default function EditEventTypePage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="duration" className="text-sm">Durée (minutes) *</Label>
-                  <Input
-                    id="duration"
-                    type="number"
-                    min="15"
-                    step="15"
-                    value={formData.duration}
-                    onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) || 30 })}
-                    required
-                    className="text-sm sm:text-base"
-                  />
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => {
+                        if (!formData) return;
+                        const newValue = Math.max(15, formData.duration - 5);
+                        setFormData({ ...formData, duration: newValue });
+                      }}
+                      disabled={!formData || formData.duration <= 15}
+                    >
+                      <Minus className="h-4 w-4" />
+                    </Button>
+                    <Input
+                      id="duration"
+                      type="number"
+                      value={formData.duration}
+                      readOnly
+                      className="text-center text-sm sm:text-base"
+                      min="15"
+                      step="5"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => {
+                        if (!formData) return;
+                        const newValue = Math.min(120, formData.duration + 5);
+                        setFormData({ ...formData, duration: newValue });
+                      }}
+                      disabled={!formData || formData.duration >= 120}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -229,14 +256,43 @@ export default function EditEventTypePage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="bufferTime">Temps de pause (minutes)</Label>
-                  <Input
-                    id="bufferTime"
-                    type="number"
-                    min="0"
-                    step="15"
-                    value={formData.bufferTime}
-                    onChange={(e) => setFormData({ ...formData, bufferTime: parseInt(e.target.value) || 0 })}
-                  />
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => {
+                        if (!formData) return;
+                        const newValue = Math.max(0, formData.bufferTime - 5);
+                        setFormData({ ...formData, bufferTime: newValue });
+                      }}
+                      disabled={!formData || formData.bufferTime <= 0}
+                    >
+                      <Minus className="h-4 w-4" />
+                    </Button>
+                    <Input
+                      id="bufferTime"
+                      type="number"
+                      value={formData.bufferTime}
+                      readOnly
+                      className="text-center text-sm sm:text-base"
+                      min="0"
+                      step="5"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => {
+                        if (!formData) return;
+                        const newValue = Math.min(60, formData.bufferTime + 5);
+                        setFormData({ ...formData, bufferTime: newValue });
+                      }}
+                      disabled={!formData || formData.bufferTime >= 60}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="space-y-2">

@@ -52,6 +52,9 @@ export default function ClientsPage() {
   });
   const [error, setError] = useState("");
 
+  // Note: Cette page permet aux administrateurs de créer et gérer des comptes clients
+  // Les clients peuvent ensuite se connecter pour voir leurs rendez-vous
+
   useEffect(() => {
     if (sessionStatus === "loading") return;
 
@@ -164,7 +167,9 @@ export default function ClientsPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold">Gestion des clients</h1>
-            <p className="text-sm sm:text-base text-muted-foreground">Créez et gérez les comptes clients</p>
+            <p className="text-sm sm:text-base text-muted-foreground">
+              Créez et gérez les comptes clients. Les clients peuvent ensuite se connecter pour voir leurs rendez-vous et en prendre de nouveaux.
+            </p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>

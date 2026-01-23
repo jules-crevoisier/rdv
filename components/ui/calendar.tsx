@@ -111,6 +111,7 @@ function Calendar({
           props.showWeekNumber
             ? "[&:nth-child(2)[data-selected=true]_button]:rounded-l-md"
             : "[&:first-child[data-selected=true]_button]:rounded-l-md",
+          "[&[data-has-slots=true]_button]:after:content-[''] [&[data-has-slots=true]_button]:after:absolute [&[data-has-slots=true]_button]:after:bottom-1 [&[data-has-slots=true]_button]:after:left-1/2 [&[data-has-slots=true]_button]:after:-translate-x-1/2 [&[data-has-slots=true]_button]:after:w-1.5 [&[data-has-slots=true]_button]:after:h-1.5 [&[data-has-slots=true]_button]:after:rounded-full [&[data-has-slots=true]_button]:after:bg-primary",
           defaultClassNames.day
         ),
         range_start: cn(
@@ -195,6 +196,9 @@ function CalendarDayButton({
     if (modifiers.focused) ref.current?.focus()
   }, [modifiers.focused])
 
+  const hasAppointments = modifiers.hasAppointments as boolean | undefined
+  const hasSlots = modifiers.hasSlots as boolean | undefined
+
   return (
     <Button
       ref={ref}
@@ -210,8 +214,11 @@ function CalendarDayButton({
       data-range-start={modifiers.range_start}
       data-range-end={modifiers.range_end}
       data-range-middle={modifiers.range_middle}
+      data-has-appointments={hasAppointments}
+      data-has-slots={hasSlots}
       className={cn(
         "data-[selected-single=true]:bg-primary data-[selected-single=true]:text-primary-foreground data-[range-middle=true]:bg-accent data-[range-middle=true]:text-accent-foreground data-[range-start=true]:bg-primary data-[range-start=true]:text-primary-foreground data-[range-end=true]:bg-primary data-[range-end=true]:text-primary-foreground group-data-[focused=true]/day:border-ring group-data-[focused=true]/day:ring-ring/50 dark:hover:text-accent-foreground flex aspect-square size-auto w-full min-w-(--cell-size) flex-col gap-1 leading-none font-normal group-data-[focused=true]/day:relative group-data-[focused=true]/day:z-10 group-data-[focused=true]/day:ring-[3px] data-[range-end=true]:rounded-md data-[range-end=true]:rounded-r-md data-[range-middle=true]:rounded-none data-[range-start=true]:rounded-md data-[range-start=true]:rounded-l-md [&>span]:text-xs [&>span]:opacity-70",
+        (hasAppointments || hasSlots) && !modifiers.selected && "bg-primary/10 text-primary font-semibold hover:bg-primary/20",
         defaultClassNames.day,
         className
       )}

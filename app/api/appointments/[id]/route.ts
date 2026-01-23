@@ -63,7 +63,12 @@ export async function DELETE(
     }
 
     const { id } = await params;
-    await deleteAppointment(id, session.user.id);
+    const result = await deleteAppointment(id, session.user.id, session.user.email || undefined);
+
+    // Vérifier si un rendez-vous a été supprimé
+    if (result.count === 0) {
+      return NextResponse.json({ error: "Rendez-vous non trouvé ou vous n'avez pas la permission de le supprimer" }, { status: 404 });
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

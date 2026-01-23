@@ -11,6 +11,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
 import { formatDate, formatTime, addMinutes } from "@/lib/utils";
+import { format } from "date-fns";
+import { fr } from "react-day-picker/locale";
 import type { BookingFormData } from "@/lib/types";
 import { Clock, Calendar as CalendarIcon, User, Mail, Phone, FileText, XCircle, Archive } from "lucide-react";
 
@@ -32,6 +34,7 @@ export default function BookPage() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string | null>(null);
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+  const [availableDates, setAvailableDates] = useState<string[]>([]);
   const [formData, setFormData] = useState<BookingFormData>({
     name: "",
     email: "",
@@ -62,6 +65,25 @@ export default function BookPage() {
 
     fetchEventType();
   }, [eventTypeId]);
+
+  // Récupérer toutes les dates avec créneaux disponibles
+  useEffect(() => {
+    const fetchAvailableDates = async () => {
+      if (eventType) {
+        try {
+          const response = await fetch(`/api/availability/${eventTypeId}/dates`);
+          if (response.ok) {
+            const data = await response.json();
+            setAvailableDates(data.dates || []);
+          }
+        } catch (error) {
+          console.error("Error fetching available dates:", error);
+        }
+      }
+    };
+
+    fetchAvailableDates();
+  }, [eventType, eventTypeId]);
 
   useEffect(() => {
     const fetchSlots = async () => {
@@ -223,7 +245,11 @@ export default function BookPage() {
   }
 
   const disabledDates = (date: Date) => {
-    return date < new Date(new Date().setHours(0, 0, 0, 0));
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dateStr = format(date, "yyyy-MM-dd");
+    // Désactiver les dates passées et les dates sans créneaux disponibles
+    return date < today || !availableDates.includes(dateStr);
   };
 
   return (
@@ -251,6 +277,16 @@ export default function BookPage() {
                     selected={selectedDate}
                     onSelect={handleDateSelect}
                     disabled={disabledDates}
+                    locale={fr}
+                    weekStartsOn={1}
+                    modifiers={{
+                      hasSlots: availableDates.map((dateStr) => {
+                        const [year, month, day] = dateStr.split("-").map(Number);
+                        const date = new Date(year, month - 1, day);
+                        date.setHours(0, 0, 0, 0);
+                        return date;
+                      }),
+                    }}
                     className="rounded-md border w-full"
                   />
                 </div>
