@@ -22,7 +22,7 @@ export async function GET(
         OR: [
           { userId },
           { clientId: userId },
-          { clientEmail: session.user.email || undefined },
+          { clientEmail: session.user?.email || undefined },
         ],
       },
       include: {
@@ -83,7 +83,7 @@ export async function GET(
 
       // Déterminer si c'est un rendez-vous pris par l'utilisateur ou reçu
       const isAppointmentTaken = (appointment.clientId === userId) || 
-                                  (appointment.clientEmail === session.user.email && appointment.userId !== userId);
+                                  (session.user?.email && appointment.clientEmail === session.user.email && appointment.userId !== userId);
       
       // Utiliser le nom du client comme titre de l'événement
       const summary = appointment.clientName || appointment.eventType.name;
