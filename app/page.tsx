@@ -137,49 +137,50 @@ export default function DashboardPage() {
   return (
     <MainLayout>
       <div className="space-y-8">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">Tableau de bord</h1>
-            <p className="text-muted-foreground">Vue d'ensemble de vos rendez-vous</p>
+            <h1 className="text-2xl sm:text-3xl font-bold">Tableau de bord</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">Vue d'ensemble de vos rendez-vous</p>
           </div>
-          <Link href="/event-types/new">
-            <Button>
+          <Link href="/event-types/new" className="w-full sm:w-auto">
+            <Button className="w-full sm:w-auto">
               <Plus className="mr-2 h-4 w-4" />
-              Nouveau type de rendez-vous
+              <span className="hidden sm:inline">Nouveau type de rendez-vous</span>
+              <span className="sm:hidden">Nouveau type</span>
             </Button>
           </Link>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Types de rendez-vous</CardTitle>
+              <CardTitle className="text-xs sm:text-sm font-medium">Types de rendez-vous</CardTitle>
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{eventTypes.length}</div>
+              <div className="text-xl sm:text-2xl font-bold">{eventTypes.length}</div>
               <p className="text-xs text-muted-foreground">Types configurés</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Rendez-vous aujourd'hui</CardTitle>
+              <CardTitle className="text-xs sm:text-sm font-medium">Rendez-vous aujourd'hui</CardTitle>
               <CalendarIcon className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{todayAppointments.length}</div>
+              <div className="text-xl sm:text-2xl font-bold">{todayAppointments.length}</div>
               <p className="text-xs text-muted-foreground">Rendez-vous prévus</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total rendez-vous</CardTitle>
+              <CardTitle className="text-xs sm:text-sm font-medium">Total rendez-vous</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{appointments.length}</div>
+              <div className="text-xl sm:text-2xl font-bold">{appointments.length}</div>
               <p className="text-xs text-muted-foreground">Tous les rendez-vous</p>
             </CardContent>
           </Card>
@@ -188,11 +189,13 @@ export default function DashboardPage() {
         <div className="grid gap-4 md:grid-cols-2">
           <Card>
             <CardHeader>
-              <CardTitle>Calendrier</CardTitle>
-              <CardDescription>Sélectionnez une date pour voir les rendez-vous</CardDescription>
+              <CardTitle className="text-lg sm:text-xl">Calendrier</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">Sélectionnez une date pour voir les rendez-vous</CardDescription>
             </CardHeader>
             <CardContent>
-              <Calendar mode="single" selected={selectedDate} onSelect={(date) => date && setSelectedDate(date)} />
+              <div className="flex justify-center">
+                <Calendar mode="single" selected={selectedDate} onSelect={(date) => date && setSelectedDate(date)} className="w-full" />
+              </div>
               {selectedDateAppointments.length > 0 && (
                 <div className="mt-4 space-y-2">
                   <p className="text-sm font-medium">Rendez-vous le {formatDate(selectedDate)}</p>

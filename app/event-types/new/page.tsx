@@ -104,16 +104,16 @@ export default function NewEventTypePage() {
 
   return (
     <MainLayout>
-      <div className="mx-auto max-w-4xl space-y-8">
-        <div className="flex items-center gap-4">
+      <div className="mx-auto max-w-4xl space-y-6 sm:space-y-8">
+        <div className="flex items-center gap-2 sm:gap-4">
           <Link href="/event-types">
             <Button variant="ghost" size="icon">
               <ArrowLeft className="h-4 w-4" />
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold">Nouveau type de rendez-vous</h1>
-            <p className="text-muted-foreground">Créez un nouveau type de rendez-vous</p>
+            <h1 className="text-2xl sm:text-3xl font-bold">Nouveau type de rendez-vous</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">Créez un nouveau type de rendez-vous</p>
           </div>
         </div>
 
@@ -245,13 +245,13 @@ export default function NewEventTypePage() {
 
           <AvailabilityForm dateOverrides={dateAvailabilities} onChange={setDateAvailabilities} />
 
-          <div className="flex justify-end gap-4 pt-4">
-            <Link href="/event-types">
-              <Button type="button" variant="outline">
+          <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4 pt-4">
+            <Link href="/event-types" className="w-full sm:w-auto">
+              <Button type="button" variant="outline" className="w-full sm:w-auto">
                 Annuler
               </Button>
             </Link>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
               {isSubmitting ? "Création..." : "Créer"}
             </Button>
           </div>

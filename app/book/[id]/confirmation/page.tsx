@@ -95,69 +95,69 @@ const ConfirmationContent = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-4 sm:py-8">
         <div className="mx-auto max-w-2xl">
           <Card>
             <CardHeader className="text-center">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-                <CheckCircle className="h-8 w-8 text-green-600" />
+              <div className="mx-auto mb-4 flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-full bg-green-100">
+                <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
               </div>
-              <CardTitle className="text-2xl">Réservation confirmée !</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-xl sm:text-2xl">Réservation confirmée !</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
                 {appointment.status === "pending"
                   ? "Votre demande de rendez-vous a été envoyée et est en attente d'approbation."
                   : "Votre rendez-vous a été confirmé avec succès."}
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <Calendar className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Date et heure</p>
-                    <p className="text-lg font-semibold">{formatDateTime(appointment.startTime)}</p>
+            <CardContent className="space-y-4 sm:space-y-6">
+              <div className="space-y-3 sm:space-y-4">
+                <div className="flex items-start sm:items-center gap-3">
+                  <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground mt-0.5 sm:mt-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs sm:text-sm font-medium text-muted-foreground">Date et heure</p>
+                    <p className="text-base sm:text-lg font-semibold break-words">{formatDateTime(appointment.startTime)}</p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <User className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Type de rendez-vous</p>
-                    <p className="text-lg font-semibold">{appointment.eventType.name}</p>
+                <div className="flex items-start sm:items-center gap-3">
+                  <User className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground mt-0.5 sm:mt-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs sm:text-sm font-medium text-muted-foreground">Type de rendez-vous</p>
+                    <p className="text-base sm:text-lg font-semibold break-words">{appointment.eventType.name}</p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <User className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Nom</p>
-                    <p className="text-lg font-semibold">{appointment.clientName}</p>
+                <div className="flex items-start sm:items-center gap-3">
+                  <User className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground mt-0.5 sm:mt-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs sm:text-sm font-medium text-muted-foreground">Nom</p>
+                    <p className="text-base sm:text-lg font-semibold break-words">{appointment.clientName}</p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <Mail className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Email</p>
-                    <p className="text-lg font-semibold">{appointment.clientEmail}</p>
+                <div className="flex items-start sm:items-center gap-3">
+                  <Mail className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground mt-0.5 sm:mt-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs sm:text-sm font-medium text-muted-foreground">Email</p>
+                    <p className="text-base sm:text-lg font-semibold break-words">{appointment.clientEmail}</p>
                   </div>
                 </div>
 
                 {appointment.clientPhone && (
-                  <div className="flex items-center gap-3">
-                    <Phone className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Téléphone</p>
-                      <p className="text-lg font-semibold">{appointment.clientPhone}</p>
+                  <div className="flex items-start sm:items-center gap-3">
+                    <Phone className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground mt-0.5 sm:mt-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs sm:text-sm font-medium text-muted-foreground">Téléphone</p>
+                      <p className="text-base sm:text-lg font-semibold break-words">{appointment.clientPhone}</p>
                     </div>
                   </div>
                 )}
 
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Statut</p>
+                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">Statut</p>
                   <Badge
                     variant={appointment.status === "pending" ? "outline" : "default"}
-                    className="mt-1"
+                    className="mt-1 text-xs sm:text-sm"
                   >
                     {appointment.status === "pending" ? "En attente d'approbation" : "Confirmé"}
                   </Badge>
@@ -165,8 +165,8 @@ const ConfirmationContent = () => {
               </div>
 
               {appointment.status === "pending" && (
-                <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-                  <p className="text-sm text-blue-900">
+                <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 sm:p-4">
+                  <p className="text-xs sm:text-sm text-blue-900">
                     Votre demande de rendez-vous est en attente d'approbation. Vous recevrez une
                     confirmation par email une fois qu'elle sera approuvée.
                   </p>
@@ -174,8 +174,8 @@ const ConfirmationContent = () => {
               )}
 
               <div className="flex justify-center gap-4 pt-4">
-                <Link href="/">
-                  <Button variant="outline">Retour à l'accueil</Button>
+                <Link href="/" className="w-full sm:w-auto">
+                  <Button variant="outline" className="w-full sm:w-auto">Retour à l'accueil</Button>
                 </Link>
               </div>
             </CardContent>

@@ -308,13 +308,13 @@ export default function EventTypesPage() {
   return (
     <MainLayout>
       <div className="space-y-8">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">Types de rendez-vous</h1>
-            <p className="text-muted-foreground">Gérez vos différents types de rendez-vous</p>
+            <h1 className="text-2xl sm:text-3xl font-bold">Types de rendez-vous</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">Gérez vos différents types de rendez-vous</p>
           </div>
-          <Link href="/event-types/new">
-            <Button>
+          <Link href="/event-types/new" className="w-full sm:w-auto">
+            <Button className="w-full sm:w-auto">
               <Plus className="mr-2 h-4 w-4" />
               Nouveau type
             </Button>
@@ -338,7 +338,7 @@ export default function EventTypesPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             {eventTypes.map((eventType) => (
               <Card key={eventType.id}>
                 <CardHeader>
@@ -445,17 +445,19 @@ export default function EventTypesPage() {
                       </Badge>
                     )}
                     <div className="flex flex-col gap-2 pt-2">
-                      <div className="flex gap-2">
-                        <Link href={`/event-types/${eventType.id}/edit`} className="flex-1">
-                          <Button variant="outline" className="w-full">
-                            <Edit className="mr-2 h-4 w-4" />
-                            Modifier
+                      <div className="grid grid-cols-2 gap-2">
+                        <Link href={`/event-types/${eventType.id}/edit`} className="w-full">
+                          <Button variant="outline" className="w-full text-xs sm:text-sm">
+                            <Edit className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                            <span className="hidden sm:inline">Modifier</span>
+                            <span className="sm:hidden">Modif.</span>
                           </Button>
                         </Link>
-                        <Link href={`/event-types/${eventType.id}/availability`} className="flex-1">
-                          <Button variant="outline" className="w-full">
-                            <Calendar className="mr-2 h-4 w-4" />
-                            Disponibilités
+                        <Link href={`/event-types/${eventType.id}/availability`} className="w-full">
+                          <Button variant="outline" className="w-full text-xs sm:text-sm">
+                            <Calendar className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                            <span className="hidden sm:inline">Disponibilités</span>
+                            <span className="sm:hidden">Dispo.</span>
                           </Button>
                         </Link>
                       </div>
@@ -464,17 +466,18 @@ export default function EventTypesPage() {
                           <DialogTrigger asChild>
                             <Button 
                               variant="outline" 
-                              className="flex-1"
+                              className="flex-1 text-xs sm:text-sm"
                               disabled={!isLinkAccessible(eventType.status)}
                             >
-                              <ExternalLink className="mr-2 h-4 w-4" />
-                              Lien
+                              <ExternalLink className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                              <span className="hidden sm:inline">Lien</span>
+                              <span className="sm:hidden">Lien</span>
                             </Button>
                           </DialogTrigger>
-                        <DialogContent>
+                        <DialogContent className="max-w-[95vw] sm:max-w-lg">
                           <DialogHeader>
-                            <DialogTitle>Lien de réservation</DialogTitle>
-                            <DialogDescription>
+                            <DialogTitle className="text-base sm:text-lg">Lien de réservation</DialogTitle>
+                            <DialogDescription className="text-xs sm:text-sm">
                               {isLinkAccessible(eventType.status) 
                                 ? "Partagez ce lien pour permettre aux clients de réserver ce type de rendez-vous"
                                 : "Ce type de rendez-vous n'est pas accessible publiquement. Le statut doit être 'En ligne' ou 'Privé' pour partager le lien."}
@@ -482,26 +485,26 @@ export default function EventTypesPage() {
                           </DialogHeader>
                           {isLinkAccessible(eventType.status) ? (
                             <>
-                              <div className="flex gap-2">
+                              <div className="flex flex-col sm:flex-row gap-2">
                                 <input
                                   type="text"
                                   readOnly
                                   value={getBookingLink(eventType.id)}
-                                  className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                  className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-xs sm:text-sm"
                                 />
-                                <Button onClick={() => copyToClipboard(getBookingLink(eventType.id))}>
+                                <Button onClick={() => copyToClipboard(getBookingLink(eventType.id))} className="w-full sm:w-auto">
                                   Copier
                                 </Button>
                               </div>
                               <DialogFooter>
-                                <Button variant="outline" onClick={() => window.open(getBookingLink(eventType.id), "_blank")}>
+                                <Button variant="outline" onClick={() => window.open(getBookingLink(eventType.id), "_blank")} className="w-full sm:w-auto">
                                   Ouvrir
                                 </Button>
                               </DialogFooter>
                             </>
                           ) : (
                             <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4">
-                              <p className="text-sm text-destructive">
+                              <p className="text-xs sm:text-sm text-destructive">
                                 Le lien de réservation n'est pas disponible car le statut est "{getStatusLabel(eventType.status)}".
                                 Changez le statut en "En ligne" ou "Privé" pour activer le lien.
                               </p>
@@ -511,10 +514,11 @@ export default function EventTypesPage() {
                         </Dialog>
                         <Button
                           variant="destructive"
-                          size="icon"
+                          size="sm"
                           onClick={() => handleDelete(eventType.id)}
+                          className="px-2 sm:px-3"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
                         </Button>
                       </div>
                     </div>

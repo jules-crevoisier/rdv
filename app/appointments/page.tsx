@@ -244,10 +244,10 @@ export default function AppointmentsPage() {
               <span className="text-muted-foreground">{appointment.notes}</span>
             </div>
           )}
-          <div className="flex gap-2 pt-2">
+          <div className="flex flex-col sm:flex-row gap-2 pt-2">
             <Dialog>
               <DialogTrigger asChild>
-                <Button variant="outline" className="flex-1" onClick={() => setSelectedAppointment(appointment)}>
+                <Button variant="outline" className="flex-1 w-full sm:w-auto" onClick={() => setSelectedAppointment(appointment)}>
                   Détails
                 </Button>
               </DialogTrigger>
@@ -302,33 +302,39 @@ export default function AppointmentsPage() {
             </Dialog>
             {/* Les actions de confirmation/annulation ne sont disponibles que pour les rendez-vous reçus */}
             {userIsOwner && appointment.status === "pending" && (
-              <>
+              <div className="flex gap-2">
                 <Button
                   variant="outline"
-                  size="icon"
+                  size="sm"
+                  className="flex-1 sm:flex-initial"
                   onClick={() => handleStatusChange(appointment.id, "confirmed")}
                   title="Confirmer"
                 >
-                  <Check className="h-4 w-4" />
+                  <Check className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Confirmer</span>
                 </Button>
                 <Button
                   variant="outline"
-                  size="icon"
+                  size="sm"
+                  className="flex-1 sm:flex-initial"
                   onClick={() => handleStatusChange(appointment.id, "cancelled")}
                   title="Annuler"
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Annuler</span>
                 </Button>
-              </>
+              </div>
             )}
             {/* Les utilisateurs peuvent supprimer leurs propres rendez-vous ou ceux qu'ils ont reçus */}
             <Button
               variant="destructive"
-              size="icon"
+              size="sm"
+              className="w-full sm:w-auto"
               onClick={() => handleDelete(appointment.id)}
               title="Supprimer"
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash2 className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Supprimer</span>
             </Button>
           </div>
         </div>
@@ -351,19 +357,21 @@ export default function AppointmentsPage() {
     <MainLayout>
       <div className="space-y-8">
         <div>
-          <h1 className="text-3xl font-bold">Réservations</h1>
-          <p className="text-muted-foreground">Gérez tous vos rendez-vous</p>
+          <h1 className="text-2xl sm:text-3xl font-bold">Réservations</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">Gérez tous vos rendez-vous</p>
         </div>
 
         <Tabs defaultValue="all" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="all">Tous ({allAppointments.length})</TabsTrigger>
-            <TabsTrigger value="my">Mes RDV ({myAppointments.length})</TabsTrigger>
-            <TabsTrigger value="received">Reçus ({receivedAppointments.length})</TabsTrigger>
-            <TabsTrigger value="pending">En attente ({pendingAppointments.length})</TabsTrigger>
-            <TabsTrigger value="upcoming">À venir ({upcomingAppointments.length})</TabsTrigger>
-            <TabsTrigger value="past">Passés ({pastAppointments.length})</TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto">
+            <TabsList className="grid w-full min-w-[600px] grid-cols-6 md:min-w-0">
+              <TabsTrigger value="all" className="text-xs sm:text-sm">Tous ({allAppointments.length})</TabsTrigger>
+              <TabsTrigger value="my" className="text-xs sm:text-sm">Mes RDV ({myAppointments.length})</TabsTrigger>
+              <TabsTrigger value="received" className="text-xs sm:text-sm">Reçus ({receivedAppointments.length})</TabsTrigger>
+              <TabsTrigger value="pending" className="text-xs sm:text-sm">En attente ({pendingAppointments.length})</TabsTrigger>
+              <TabsTrigger value="upcoming" className="text-xs sm:text-sm">À venir ({upcomingAppointments.length})</TabsTrigger>
+              <TabsTrigger value="past" className="text-xs sm:text-sm">Passés ({pastAppointments.length})</TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="all" className="space-y-4">
             {allAppointments.length === 0 ? (
@@ -380,16 +388,16 @@ export default function AppointmentsPage() {
               <div className="space-y-6">
                 {myAppointments.length > 0 && (
                   <div>
-                    <h2 className="mb-4 text-lg font-semibold text-primary">Mes rendez-vous</h2>
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    <h2 className="mb-4 text-base sm:text-lg font-semibold text-primary">Mes rendez-vous</h2>
+                    <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                       {myAppointments.map(renderAppointmentCard)}
                     </div>
                   </div>
                 )}
                 {receivedAppointments.length > 0 && (
                   <div>
-                    <h2 className="mb-4 text-lg font-semibold">Rendez-vous reçus</h2>
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    <h2 className="mb-4 text-base sm:text-lg font-semibold">Rendez-vous reçus</h2>
+                    <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                       {receivedAppointments.map(renderAppointmentCard)}
                     </div>
                   </div>
@@ -410,7 +418,7 @@ export default function AppointmentsPage() {
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                 {myAppointments.map(renderAppointmentCard)}
               </div>
             )}
@@ -421,14 +429,14 @@ export default function AppointmentsPage() {
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-12">
                   <Calendar className="mb-4 h-12 w-12 text-muted-foreground" />
-                  <h3 className="mb-2 text-lg font-semibold">Aucun rendez-vous reçu</h3>
-                  <p className="text-center text-muted-foreground">
+                  <h3 className="mb-2 text-base sm:text-lg font-semibold">Aucun rendez-vous reçu</h3>
+                  <p className="text-center text-sm text-muted-foreground">
                     Les rendez-vous que d'autres personnes prennent avec vous apparaîtront ici
                   </p>
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                 {receivedAppointments.map(renderAppointmentCard)}
               </div>
             )}
@@ -438,11 +446,11 @@ export default function AppointmentsPage() {
             {pendingAppointments.length === 0 ? (
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-12">
-                  <p className="text-muted-foreground">Aucun rendez-vous en attente</p>
+                  <p className="text-sm text-muted-foreground">Aucun rendez-vous en attente</p>
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                 {pendingAppointments.map(renderAppointmentCard)}
               </div>
             )}
@@ -452,11 +460,11 @@ export default function AppointmentsPage() {
             {upcomingAppointments.length === 0 ? (
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-12">
-                  <p className="text-muted-foreground">Aucun rendez-vous à venir</p>
+                  <p className="text-sm text-muted-foreground">Aucun rendez-vous à venir</p>
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                 {upcomingAppointments.map(renderAppointmentCard)}
               </div>
             )}
@@ -466,11 +474,11 @@ export default function AppointmentsPage() {
             {pastAppointments.length === 0 ? (
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-12">
-                  <p className="text-muted-foreground">Aucun rendez-vous passé</p>
+                  <p className="text-sm text-muted-foreground">Aucun rendez-vous passé</p>
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                 {pastAppointments.map(renderAppointmentCard)}
               </div>
             )}

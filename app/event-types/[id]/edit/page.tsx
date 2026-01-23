@@ -140,31 +140,32 @@ export default function EditEventTypePage() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold">Modifier le type de rendez-vous</h1>
-            <p className="text-muted-foreground">Modifiez les détails de votre type de rendez-vous</p>
+            <h1 className="text-2xl sm:text-3xl font-bold">Modifier le type de rendez-vous</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">Modifiez les détails de votre type de rendez-vous</p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit}>
           <Card>
             <CardHeader>
-              <CardTitle>Informations de base</CardTitle>
-              <CardDescription>Définissez les détails de votre type de rendez-vous</CardDescription>
+              <CardTitle className="text-base sm:text-lg">Informations de base</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">Définissez les détails de votre type de rendez-vous</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Nom *</Label>
+                <Label htmlFor="name" className="text-sm">Nom *</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="Ex: Consultation initiale"
                   required
+                  className="text-sm sm:text-base"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Description *</Label>
+                <Label htmlFor="description" className="text-sm">Description *</Label>
                 <Textarea
                   id="description"
                   value={formData.description}
@@ -172,12 +173,13 @@ export default function EditEventTypePage() {
                   placeholder="Décrivez ce type de rendez-vous"
                   rows={4}
                   required
+                  className="text-sm sm:text-base"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="duration">Durée (minutes) *</Label>
+                  <Label htmlFor="duration" className="text-sm">Durée (minutes) *</Label>
                   <Input
                     id="duration"
                     type="number"
@@ -186,11 +188,12 @@ export default function EditEventTypePage() {
                     value={formData.duration}
                     onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) || 30 })}
                     required
+                    className="text-sm sm:text-base"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="color">Couleur</Label>
+                  <Label htmlFor="color" className="text-sm">Couleur</Label>
                   <Select
                     value={formData.color}
                     onValueChange={(value) => setFormData({ ...formData, color: value })}
@@ -223,7 +226,7 @@ export default function EditEventTypePage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="bufferTime">Temps de pause (minutes)</Label>
                   <Input
@@ -263,20 +266,20 @@ export default function EditEventTypePage() {
                   onChange={(e) => setFormData({ ...formData, requiresApproval: e.target.checked })}
                   className="h-4 w-4 rounded border-gray-300"
                 />
-                <Label htmlFor="requiresApproval" className="cursor-pointer">
+                <Label htmlFor="requiresApproval" className="cursor-pointer text-sm">
                   Nécessite une approbation manuelle
                 </Label>
               </div>
             </CardContent>
           </Card>
 
-          <div className="flex justify-end gap-4 pt-4">
-            <Link href="/event-types">
-              <Button type="button" variant="outline">
+          <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4 pt-4">
+            <Link href="/event-types" className="w-full sm:w-auto">
+              <Button type="button" variant="outline" className="w-full sm:w-auto">
                 Annuler
               </Button>
             </Link>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
               {isSubmitting ? "Enregistrement..." : "Enregistrer"}
             </Button>
           </div>

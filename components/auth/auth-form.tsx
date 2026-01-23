@@ -108,16 +108,16 @@ export const AuthForm = ({ defaultTab = "login" }: AuthFormProps) => {
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
-        <CardTitle className="text-2xl text-center">Reservy</CardTitle>
-        <CardDescription className="text-center">
+        <CardTitle className="text-xl sm:text-2xl text-center">Reservy</CardTitle>
+        <CardDescription className="text-center text-xs sm:text-sm">
           Gérez vos rendez-vous en toute simplicité
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "login" | "register")}>
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="login">Connexion</TabsTrigger>
-            <TabsTrigger value="register">Inscription</TabsTrigger>
+            <TabsTrigger value="login" className="text-xs sm:text-sm">Connexion</TabsTrigger>
+            <TabsTrigger value="register" className="text-xs sm:text-sm">Inscription</TabsTrigger>
           </TabsList>
 
           <TabsContent value="login" className="space-y-4 mt-6">
@@ -169,7 +169,7 @@ export const AuthForm = ({ defaultTab = "login" }: AuthFormProps) => {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="register-name">Nom (optionnel)</Label>
+                <Label htmlFor="register-name" className="text-sm">Nom (optionnel)</Label>
                 <Input
                   id="register-name"
                   type="text"
@@ -177,11 +177,12 @@ export const AuthForm = ({ defaultTab = "login" }: AuthFormProps) => {
                   onChange={(e) => setRegisterName(e.target.value)}
                   placeholder="Votre nom"
                   disabled={isRegistering}
+                  className="text-sm sm:text-base"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="register-email">Email</Label>
+                <Label htmlFor="register-email" className="text-sm">Email</Label>
                 <Input
                   id="register-email"
                   type="email"
@@ -190,11 +191,12 @@ export const AuthForm = ({ defaultTab = "login" }: AuthFormProps) => {
                   placeholder="votre@email.com"
                   required
                   disabled={isRegistering}
+                  className="text-sm sm:text-base"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="register-password">Mot de passe</Label>
+                <Label htmlFor="register-password" className="text-sm">Mot de passe</Label>
                 <Input
                   id="register-password"
                   type="password"
@@ -204,11 +206,12 @@ export const AuthForm = ({ defaultTab = "login" }: AuthFormProps) => {
                   required
                   minLength={6}
                   disabled={isRegistering}
+                  className="text-sm sm:text-base"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="register-confirm-password">Confirmer le mot de passe</Label>
+                <Label htmlFor="register-confirm-password" className="text-sm">Confirmer le mot de passe</Label>
                 <Input
                   id="register-confirm-password"
                   type="password"
@@ -218,6 +221,7 @@ export const AuthForm = ({ defaultTab = "login" }: AuthFormProps) => {
                   required
                   minLength={6}
                   disabled={isRegistering}
+                  className="text-sm sm:text-base"
                 />
               </div>
 

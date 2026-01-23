@@ -151,8 +151,8 @@ export default function AvailabilityPage() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold">Gérer les disponibilités</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-2xl sm:text-3xl font-bold">Gérer les disponibilités</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">
               Configurez les plages horaires pour {eventType.name}
             </p>
           </div>
@@ -163,13 +163,13 @@ export default function AvailabilityPage() {
           onChange={handleAvailabilityChange}
         />
 
-        <div className="flex justify-end gap-4">
-          <Link href="/event-types">
-            <Button type="button" variant="outline">
+        <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4">
+          <Link href="/event-types" className="w-full sm:w-auto">
+            <Button type="button" variant="outline" className="w-full sm:w-auto">
               Annuler
             </Button>
           </Link>
-          <Button onClick={handleSave} disabled={isSaving}>
+          <Button onClick={handleSave} disabled={isSaving} className="w-full sm:w-auto">
             {isSaving ? "Enregistrement..." : "Enregistrer les disponibilités"}
           </Button>
         </div>

@@ -127,7 +127,7 @@ export const AvailabilityForm = ({ dateOverrides = [], onChange }: AvailabilityF
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
           <div className="space-y-4">
             <div>
               <Label className="text-base font-semibold mb-2 block">Sélectionner des dates</Label>

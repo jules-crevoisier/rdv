@@ -228,41 +228,43 @@ export default function BookPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-4 sm:py-8">
         <div className="mx-auto max-w-4xl">
-          <div className="mb-8 text-center">
-            <h1 className="mb-2 text-3xl font-bold">{eventType.name}</h1>
-            <p className="text-muted-foreground">{eventType.description}</p>
+          <div className="mb-6 sm:mb-8 text-center">
+            <h1 className="mb-2 text-2xl sm:text-3xl font-bold">{eventType.name}</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">{eventType.description}</p>
           </div>
 
-          <div className="grid gap-8 md:grid-cols-2">
+          <div className="grid gap-6 sm:gap-8 grid-cols-1 md:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CalendarIcon className="h-5 w-5" />
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <CalendarIcon className="h-4 w-4 sm:h-5 sm:w-5" />
                   Sélectionnez une date
                 </CardTitle>
-                <CardDescription>Choisissez le jour de votre rendez-vous</CardDescription>
+                <CardDescription className="text-xs sm:text-sm">Choisissez le jour de votre rendez-vous</CardDescription>
               </CardHeader>
               <CardContent>
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={handleDateSelect}
-                  disabled={disabledDates}
-                  className="rounded-md border"
-                />
+                <div className="flex justify-center">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={handleDateSelect}
+                    disabled={disabledDates}
+                    className="rounded-md border w-full"
+                  />
+                </div>
                 {selectedDate && (
                   <div className="mt-4">
-                    <p className="text-sm font-medium">
+                    <p className="text-xs sm:text-sm font-medium">
                       Créneaux disponibles le {formatDate(selectedDate)}
                     </p>
                     {availableSlots.length === 0 ? (
-                      <p className="mt-2 text-sm text-muted-foreground">
+                      <p className="mt-2 text-xs sm:text-sm text-muted-foreground">
                         Aucun créneau disponible pour cette date
                       </p>
                     ) : (
-                      <div className="mt-2 grid grid-cols-3 gap-2">
+                      <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2">
                         {availableSlots.map((slot) => {
                           const slotDate = new Date(slot);
                           const isSelected = selectedTimeSlot === slot;
@@ -288,27 +290,28 @@ export default function BookPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="h-5 w-5" />
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <User className="h-4 w-4 sm:h-5 sm:w-5" />
                   Vos informations
                 </CardTitle>
-                <CardDescription>Remplissez vos coordonnées pour finaliser la réservation</CardDescription>
+                <CardDescription className="text-xs sm:text-sm">Remplissez vos coordonnées pour finaliser la réservation</CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="name">Nom complet *</Label>
+                    <Label htmlFor="name" className="text-sm">Nom complet *</Label>
                     <Input
                       id="name"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       placeholder="Votre nom"
                       required
+                      className="text-sm sm:text-base"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email *</Label>
+                    <Label htmlFor="email" className="text-sm">Email *</Label>
                     <Input
                       id="email"
                       type="email"
@@ -316,44 +319,47 @@ export default function BookPage() {
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       placeholder="votre@email.com"
                       required
+                      className="text-sm sm:text-base"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="phone">Téléphone</Label>
+                    <Label htmlFor="phone" className="text-sm">Téléphone</Label>
                     <Input
                       id="phone"
                       type="tel"
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                       placeholder="+33 6 12 34 56 78"
+                      className="text-sm sm:text-base"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="notes">Notes (optionnel)</Label>
+                    <Label htmlFor="notes" className="text-sm">Notes (optionnel)</Label>
                     <Textarea
                       id="notes"
                       value={formData.notes}
                       onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                       placeholder="Informations supplémentaires..."
                       rows={3}
+                      className="text-sm sm:text-base"
                     />
                   </div>
 
                   {selectedTimeSlot && (
-                    <div className="rounded-lg border bg-muted p-4">
-                      <div className="flex items-center justify-between">
+                    <div className="rounded-lg border bg-muted p-3 sm:p-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                         <div>
-                          <p className="text-sm font-medium">Résumé</p>
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-xs sm:text-sm font-medium">Résumé</p>
+                          <p className="text-xs sm:text-sm text-muted-foreground">
                             {formatDate(selectedTimeSlot)} à {formatTime(selectedTimeSlot)}
                           </p>
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-xs sm:text-sm text-muted-foreground">
                             Durée: {eventType.duration} minutes
                           </p>
                         </div>
-                        <Badge variant="outline" className="flex items-center gap-1">
+                        <Badge variant="outline" className="flex items-center gap-1 w-fit">
                           <Clock className="h-3 w-3" />
                           {eventType.duration} min
                         </Badge>
@@ -369,10 +375,10 @@ export default function BookPage() {
             </Card>
           </div>
 
-          <Card className="mt-8">
+          <Card className="mt-6 sm:mt-8">
             <CardHeader>
-              <CardTitle>Détails du rendez-vous</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-base sm:text-lg">Détails du rendez-vous</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
                 <Link href="/client/login" className="text-primary hover:underline">
                   Connectez-vous
                 </Link>
@@ -384,20 +390,20 @@ export default function BookPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-4 md:grid-cols-3">
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4 text-muted-foreground" />
                   <div>
-                    <p className="text-sm font-medium">Durée</p>
-                    <p className="text-sm text-muted-foreground">{eventType.duration} minutes</p>
+                    <p className="text-xs sm:text-sm font-medium">Durée</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">{eventType.duration} minutes</p>
                   </div>
                 </div>
                 {eventType.bufferTime > 0 && (
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-muted-foreground" />
                     <div>
-                      <p className="text-sm font-medium">Temps de pause</p>
-                      <p className="text-sm text-muted-foreground">{eventType.bufferTime} minutes</p>
+                      <p className="text-xs sm:text-sm font-medium">Temps de pause</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground">{eventType.bufferTime} minutes</p>
                     </div>
                   </div>
                 )}
@@ -405,8 +411,8 @@ export default function BookPage() {
                   <div className="flex items-center gap-2">
                     <FileText className="h-4 w-4 text-muted-foreground" />
                     <div>
-                      <p className="text-sm font-medium">Approbation</p>
-                      <p className="text-sm text-muted-foreground">Requis</p>
+                      <p className="text-xs sm:text-sm font-medium">Approbation</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground">Requis</p>
                     </div>
                   </div>
                 )}
