@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Skills Claude (tasteskill) : code tiers, pas lint
+    ".claude/**",
+    ".agents/**",
   ]),
 ]);
 

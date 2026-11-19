@@ -1,0 +1,28 @@
+# Déploiement Dokploy (type "Docker Compose") ou local : `docker compose up -d --build`
+# Variables à définir dans l'onglet Environment de Dokploy (ou un fichier .env) :
+#   DATABASE_URL=postgresql://user:password@host:5432/rdv
+#   AUTH_SECRET=<openssl rand -base64 32>
+#   AUTH_URL=https://ton-domaine.fr        (optionnel, recommandé)
+services:
+  migrate:
+    build:
+      context: .
+      target: migrate
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL manquant}
+    restart: "no"
+
+  app:
+    build:
+      context: .
+      target: runner
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL manquant}
+      AUTH_SECRET: ${AUTH_SECRET:?AUTH_SECRET manquant}
+      AUTH_URL: ${AUTH_URL:-}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    expose:
+      - "3000"
