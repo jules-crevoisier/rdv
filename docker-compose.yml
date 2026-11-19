@@ -3,6 +3,9 @@
 #   DATABASE_URL=postgresql://user:password@host:5432/rdv
 #   AUTH_SECRET=<openssl rand -base64 32>
 #   AUTH_URL=https://ton-domaine.fr        (optionnel, recommandé)
+#   RESEND_API_KEY=re_...                  (emails ; sans elle, aucun email ne part)
+#   EMAIL_FROM="Reservy <rdv@ton-domaine.fr>"
+#   CRON_SECRET=<openssl rand -hex 32>     (rappels J-1)
 services:
   migrate:
     build:
@@ -20,6 +23,14 @@ services:
       DATABASE_URL: ${DATABASE_URL:?DATABASE_URL manquant}
       AUTH_SECRET: ${AUTH_SECRET:?AUTH_SECRET manquant}
       AUTH_URL: ${AUTH_URL:-}
+      APP_URL: ${APP_URL:-}
+      APP_NAME: ${APP_NAME:-}
+      APP_TIMEZONE: ${APP_TIMEZONE:-Europe/Paris}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-}
+      EMAIL_REPLY_TO: ${EMAIL_REPLY_TO:-}
+      REQUIRE_EMAIL_VERIFICATION: ${REQUIRE_EMAIL_VERIFICATION:-true}
+      CRON_SECRET: ${CRON_SECRET:-}
     depends_on:
       migrate:
         condition: service_completed_successfully

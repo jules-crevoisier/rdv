@@ -1,70 +1,59 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { CLIENT_SESSION_COOKIE, PRO_SESSION_COOKIES } from "./lib/session-cookies";
+
+// Pages ouvertes sans session
+const PUBLIC_PATHS = [
+  "/login",
+  "/register",
+  "/book",
+  "/forgot-password",
+  "/reset-password",
+  "/verify-email",
+  "/client/login",
+  "/client/register",
+];
+
+// Espace client : session client requise
+const CLIENT_PATHS = ["/client/appointments"];
+
+const startsWithAny = (path: string, prefixes: string[]) =>
+  prefixes.some((p) => path === p || path.startsWith(`${p}/`) || path.startsWith(`${p}?`));
 
 export function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
-  
-  // Vérifier si l'utilisateur a un cookie de session NextAuth
-  // NextAuth v5 utilise "authjs.session-token" (ou variantes sécurisées)
-  // Vérifier tous les noms de cookies possibles
-  const hasSessionCookie = 
-    request.cookies.has("authjs.session-token") ||
-    request.cookies.has("__Secure-authjs.session-token") ||
-    request.cookies.has("next-auth.session-token") ||
-    request.cookies.has("__Secure-next-auth.session-token");
-  
-  const isLoggedIn = hasSessionCookie;
+  const hasProSession = PRO_SESSION_COOKIES.some((name) => request.cookies.has(name));
+  const hasClientSession = request.cookies.has(CLIENT_SESSION_COOKIE);
 
-  // Pages publiques
-  const publicPaths = ["/login", "/register", "/book", "/api/calendar/public"];
-  const isPublicPath = publicPaths.some((p) => path.startsWith(p));
-  
-  // Routes client (nécessitent une session client)
-  const clientPaths = ["/client/appointments"];
-  const isClientPath = clientPaths.some((p) => path.startsWith(p));
-  
-  // Vérifier si c'est une session client
-  const hasClientSessionCookie = 
-    request.cookies.has("authjs.session-token") ||
-    request.cookies.has("__Secure-authjs.session-token");
-
-  // Si c'est une route client, vérifier la session client
-  if (isClientPath && !hasClientSessionCookie) {
-    return NextResponse.redirect(new URL("/client/login", request.url));
+  if (path === "/register") {
+    return NextResponse.redirect(new URL(hasProSession ? "/" : "/login?tab=register", request.url));
   }
 
-  // Si l'utilisateur n'est pas connecté et essaie d'accéder à une page privée (non client)
-  if (!isLoggedIn && !isPublicPath && !isClientPath) {
-    return NextResponse.redirect(new URL("/login", request.url));
+  if (startsWithAny(path, CLIENT_PATHS)) {
+    if (!hasClientSession) {
+      const url = new URL("/client/login", request.url);
+      url.searchParams.set("callbackUrl", path);
+      return NextResponse.redirect(url);
+    }
+    return NextResponse.next();
   }
 
-  // Si l'utilisateur est connecté et essaie d'accéder à login/register
-  if (isLoggedIn && (path === "/login" || path === "/register")) {
+  if (hasClientSession && (path === "/client/login" || path === "/client/register")) {
+    return NextResponse.redirect(new URL("/client/appointments", request.url));
+  }
+
+  if (hasProSession && path === "/login") {
     return NextResponse.redirect(new URL("/", request.url));
   }
-  
-  // Rediriger /register vers /login (même page maintenant)
-  if (path === "/register") {
+
+  if (!hasProSession && !startsWithAny(path, PUBLIC_PATHS)) {
     return NextResponse.redirect(new URL("/login", request.url));
-  }
-  
-  // Si le client est connecté et essaie d'accéder à client/login ou client/register
-  if (hasClientSessionCookie && (path === "/client/login" || path === "/client/register")) {
-    return NextResponse.redirect(new URL("/client/appointments", request.url));
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
-    "/((?!api|_next/static|_next/image|favicon.ico).*)",
-  ],
+  // Tout sauf les routes API, les fichiers statiques et le favicon
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
 };

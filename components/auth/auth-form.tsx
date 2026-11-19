@@ -1,109 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LoginForm } from "./login-form";
+import { RegisterForm } from "./register-form";
 
 type AuthFormProps = {
   defaultTab?: "login" | "register";
+  defaultEmail?: string;
+  notice?: string | null;
 };
 
-export const AuthForm = ({ defaultTab = "login" }: AuthFormProps) => {
-  const router = useRouter();
+export const AuthForm = ({ defaultTab = "login", defaultEmail, notice }: AuthFormProps) => {
   const [activeTab, setActiveTab] = useState<"login" | "register">(defaultTab);
-  
-  // État pour la connexion
-  const [loginEmail, setLoginEmail] = useState("");
-  const [loginPassword, setLoginPassword] = useState("");
-  const [loginError, setLoginError] = useState("");
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
-
-  // État pour l'inscription
-  const [registerName, setRegisterName] = useState("");
-  const [registerEmail, setRegisterEmail] = useState("");
-  const [registerPassword, setRegisterPassword] = useState("");
-  const [registerConfirmPassword, setRegisterConfirmPassword] = useState("");
-  const [registerError, setRegisterError] = useState("");
-  const [isRegistering, setIsRegistering] = useState(false);
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoginError("");
-    setIsLoggingIn(true);
-
-    try {
-      const result = await signIn("credentials", {
-        email: loginEmail,
-        password: loginPassword,
-        redirect: false,
-      });
-
-      if (result?.error) {
-        setLoginError("Email ou mot de passe incorrect");
-      } else {
-        router.push("/");
-        router.refresh();
-      }
-    } catch (error) {
-      setLoginError("Une erreur est survenue");
-    } finally {
-      setIsLoggingIn(false);
-    }
-  };
-
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setRegisterError("");
-
-    if (registerPassword !== registerConfirmPassword) {
-      setRegisterError("Les mots de passe ne correspondent pas");
-      return;
-    }
-
-    if (registerPassword.length < 6) {
-      setRegisterError("Le mot de passe doit contenir au moins 6 caractères");
-      return;
-    }
-
-    setIsRegistering(true);
-
-    try {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          email: registerEmail, 
-          password: registerPassword, 
-          name: registerName || undefined 
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setRegisterError(data.error || "Une erreur est survenue");
-        return;
-      }
-
-      // Après inscription réussie, basculer vers l'onglet connexion
-      setActiveTab("login");
-      setLoginEmail(registerEmail);
-      setRegisterName("");
-      setRegisterEmail("");
-      setRegisterPassword("");
-      setRegisterConfirmPassword("");
-      setRegisterError("");
-    } catch (error) {
-      setRegisterError("Une erreur est survenue");
-    } finally {
-      setIsRegistering(false);
-    }
-  };
 
   return (
     <Card className="w-full max-w-md">
@@ -120,115 +30,12 @@ export const AuthForm = ({ defaultTab = "login" }: AuthFormProps) => {
             <TabsTrigger value="register" className="text-xs sm:text-sm">Inscription</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="login" className="space-y-4 mt-6">
-            <form onSubmit={handleLogin} className="space-y-4">
-              {loginError && (
-                <div className="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
-                  {loginError}
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <Label htmlFor="login-email">Email</Label>
-                <Input
-                  id="login-email"
-                  type="email"
-                  value={loginEmail}
-                  onChange={(e) => setLoginEmail(e.target.value)}
-                  placeholder="votre@email.com"
-                  required
-                  disabled={isLoggingIn}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="login-password">Mot de passe</Label>
-                <Input
-                  id="login-password"
-                  type="password"
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                  disabled={isLoggingIn}
-                />
-              </div>
-
-              <Button type="submit" className="w-full" disabled={isLoggingIn}>
-                {isLoggingIn ? "Connexion..." : "Se connecter"}
-              </Button>
-            </form>
+          <TabsContent value="login" className="mt-6">
+            <LoginForm type="user" redirectTo="/" defaultEmail={defaultEmail} notice={notice} />
           </TabsContent>
 
-          <TabsContent value="register" className="space-y-4 mt-6">
-            <form onSubmit={handleRegister} className="space-y-4">
-              {registerError && (
-                <div className="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
-                  {registerError}
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <Label htmlFor="register-name" className="text-sm">Nom (optionnel)</Label>
-                <Input
-                  id="register-name"
-                  type="text"
-                  value={registerName}
-                  onChange={(e) => setRegisterName(e.target.value)}
-                  placeholder="Votre nom"
-                  disabled={isRegistering}
-                  className="text-sm sm:text-base"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="register-email" className="text-sm">Email</Label>
-                <Input
-                  id="register-email"
-                  type="email"
-                  value={registerEmail}
-                  onChange={(e) => setRegisterEmail(e.target.value)}
-                  placeholder="votre@email.com"
-                  required
-                  disabled={isRegistering}
-                  className="text-sm sm:text-base"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="register-password" className="text-sm">Mot de passe</Label>
-                <Input
-                  id="register-password"
-                  type="password"
-                  value={registerPassword}
-                  onChange={(e) => setRegisterPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                  minLength={6}
-                  disabled={isRegistering}
-                  className="text-sm sm:text-base"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="register-confirm-password" className="text-sm">Confirmer le mot de passe</Label>
-                <Input
-                  id="register-confirm-password"
-                  type="password"
-                  value={registerConfirmPassword}
-                  onChange={(e) => setRegisterConfirmPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                  minLength={6}
-                  disabled={isRegistering}
-                  className="text-sm sm:text-base"
-                />
-              </div>
-
-              <Button type="submit" className="w-full" disabled={isRegistering}>
-                {isRegistering ? "Inscription..." : "S'inscrire"}
-              </Button>
-            </form>
+          <TabsContent value="register" className="mt-6">
+            <RegisterForm type="user" redirectTo="/" />
           </TabsContent>
         </Tabs>
       </CardContent>

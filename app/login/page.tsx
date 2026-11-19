@@ -4,6 +4,7 @@ import { AuthForm } from "@/components/auth/auth-form";
 import { Calendar } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import { authNotice } from "@/lib/auth-notices";
 
 const LoginContent = () => {
   const searchParams = useSearchParams();
@@ -18,7 +19,11 @@ const LoginContent = () => {
             <Calendar className="h-8 w-8 text-primary-foreground" />
           </div>
         </div>
-        <AuthForm defaultTab={defaultTab} />
+        <AuthForm
+          defaultTab={defaultTab}
+          defaultEmail={searchParams.get("email") ?? undefined}
+          notice={authNotice(searchParams)}
+        />
       </div>
     </div>
   );
