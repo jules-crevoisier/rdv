@@ -3,28 +3,25 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+  Reservy — design system (tasteskill 2.5, page kind: software)
+  Deal : palette cool-grey-cobalt, pairing funnel (Funnel Display / Funnel Sans + DM Mono), radius soft.
+  Signature : le « billet » — chaque rendez-vous est un ticket détachable (talon horaire en mono,
+  perforation), et la journée se lit sur une règle horaire avec la ligne « maintenant ».
+*/
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
+  --font-sans: var(--font-text);
+  --font-display: var(--font-display-face);
+  --font-mono: var(--font-mono-face);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -37,6 +34,8 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-ink: var(--ink);
+  --color-ink-foreground: var(--ink-foreground);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -48,78 +47,252 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-enter: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* cool-grey-cobalt */
+  --background: #eef0f3;
+  --foreground: #0b0c0e;
+  --card: #ffffff;
+  --card-foreground: #0b0c0e;
+  --popover: #ffffff;
+  --popover-foreground: #0b0c0e;
+  --primary: #1f2de6;
+  --primary-foreground: #ffffff;
+  --secondary: #e2e5ea;
+  --secondary-foreground: #0b0c0e;
+  --muted: #e2e5ea;
+  --muted-foreground: #5d6470;
+  --accent: #e6e8fd;
+  --accent-foreground: #141fb0;
+  --destructive: #c8321e;
+  --success: #12795b;
+  --warning: #a35a00;
+  --border: #d6dae1;
+  --input: #c9ced7;
+  --ring: #1f2de6;
+  --ink: #0b0c0e;
+  --ink-foreground: #eef0f3;
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: #0b0c0e;
+  --foreground: #eef0f3;
+  --card: #141518;
+  --card-foreground: #eef0f3;
+  --popover: #17181a;
+  --popover-foreground: #eef0f3;
+  --primary: #5866ff;
+  --primary-foreground: #ffffff;
+  --secondary: #1d1f23;
+  --secondary-foreground: #eef0f3;
+  --muted: #1d1f23;
+  --muted-foreground: #8e939c;
+  --accent: #1b1f4a;
+  --accent-foreground: #b9bfff;
+  --destructive: #f0644d;
+  --success: #3cc495;
+  --warning: #f0a24a;
+  --border: #25272c;
+  --input: #2f3238;
+  --ring: #5866ff;
+  --ink: #eef0f3;
+  --ink-foreground: #0b0c0e;
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
+    font-feature-settings: "ss01", "cv11";
+    text-rendering: optimizeLegibility;
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    letter-spacing: -0.03em;
+    text-wrap: balance;
+  }
+  ::selection {
+    background: var(--primary);
+    color: var(--primary-foreground);
+  }
+}
+
+@layer components {
+  /* Chiffres tabulaires pour les heures, durées et compteurs */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+
+  /* Carte cliquable : se soulève de 2px au survol (pointeur fin uniquement) */
+  .lift {
+    transition:
+      transform 180ms var(--ease),
+      border-color 180ms var(--ease),
+      box-shadow 180ms var(--ease);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .lift:hover {
+      transform: translateY(-2px);
+      border-color: color-mix(in srgb, var(--foreground) 22%, var(--border));
+      box-shadow: 0 12px 24px -12px color-mix(in srgb, var(--foreground) 10%, transparent);
+    }
+  }
+
+  /* ——— Le billet ———
+     Un talon (heure) séparé du corps par une perforation, avec deux encoches.
+     --stub : largeur du talon. Le masque découpe les encoches ; la ligne pointillée est un pseudo-élément. */
+  .ticket {
+    --stub: 5.5rem;
+    --notch: 9px;
+    position: relative;
+    display: grid;
+    grid-template-columns: var(--stub) 1fr;
+    background: var(--card);
+    border-radius: var(--radius-xl);
+    -webkit-mask:
+      radial-gradient(circle var(--notch) at var(--stub) 0, #0000 97%, #000) top / 100% 51% no-repeat,
+      radial-gradient(circle var(--notch) at var(--stub) 100%, #0000 97%, #000) bottom / 100% 51% no-repeat;
+    mask:
+      radial-gradient(circle var(--notch) at var(--stub) 0, #0000 97%, #000) top / 100% 51% no-repeat,
+      radial-gradient(circle var(--notch) at var(--stub) 100%, #0000 97%, #000) bottom / 100% 51% no-repeat;
+  }
+  .ticket::before {
+    content: "";
+    position: absolute;
+    top: calc(var(--notch) + 4px);
+    bottom: calc(var(--notch) + 4px);
+    left: calc(var(--stub) - 0.5px);
+    border-left: 1.5px dashed var(--border);
+    pointer-events: none;
+  }
+  .ticket-shadow {
+    filter: drop-shadow(0 1px 0 color-mix(in srgb, var(--foreground) 8%, transparent))
+      drop-shadow(0 8px 18px color-mix(in srgb, var(--foreground) 6%, transparent));
+  }
+  .ticket__stub {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.125rem;
+    padding: 0.875rem 0.75rem 0.875rem 1rem;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+  .ticket__body {
+    min-width: 0;
+    padding: 0.875rem 1rem 0.875rem 1.25rem;
+  }
+
+  /* Grand billet (confirmation) : talon en haut, perforation horizontale */
+  .ticket-lg {
+    --cut: 7.5rem;
+    --notch: 12px;
+    position: relative;
+    background: var(--card);
+    border-radius: var(--radius-2xl);
+    -webkit-mask:
+      radial-gradient(circle var(--notch) at 0 var(--cut), #0000 97%, #000) left / 51% 100% no-repeat,
+      radial-gradient(circle var(--notch) at 100% var(--cut), #0000 97%, #000) right / 51% 100% no-repeat;
+    mask:
+      radial-gradient(circle var(--notch) at 0 var(--cut), #0000 97%, #000) left / 51% 100% no-repeat,
+      radial-gradient(circle var(--notch) at 100% var(--cut), #0000 97%, #000) right / 51% 100% no-repeat;
+  }
+  .ticket-lg::before {
+    content: "";
+    position: absolute;
+    left: calc(var(--notch) + 6px);
+    right: calc(var(--notch) + 6px);
+    top: calc(var(--cut) - 0.5px);
+    border-top: 1.5px dashed var(--border);
+    pointer-events: none;
+  }
+
+  /* Règle horaire du jour : graduations toutes les heures */
+  .ruler {
+    background-image: repeating-linear-gradient(
+      to bottom,
+      var(--border) 0 1px,
+      transparent 1px var(--hour)
+    );
+  }
+
+  /* Entrée unique au chargement */
+  .enter {
+    animation: enter 700ms var(--ease-enter) both;
+  }
+  .enter-2 {
+    animation: enter 700ms 90ms var(--ease-enter) both;
+  }
+  .enter-3 {
+    animation: enter 700ms 180ms var(--ease-enter) both;
+  }
+
+  /* Le tampon : posé une fois quand un billet est émis */
+  .stamp {
+    animation: stamp 520ms 350ms var(--ease-enter) both;
+  }
+
+  /* Ligne « maintenant » qui respire doucement */
+  .now-dot {
+    animation: now 2.8s ease-in-out infinite;
+  }
+}
+
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes stamp {
+  from {
+    opacity: 0;
+    transform: scale(1.35) rotate(-14deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(-8deg);
+  }
+}
+
+@keyframes now {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 45%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 5px color-mix(in srgb, var(--primary) 0%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
   }
 }

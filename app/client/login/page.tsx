@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
+import { AuthShell } from "@/components/auth/auth-shell";
 import { Calendar } from "lucide-react";
 
 function ClientLoginContent() {
@@ -49,9 +50,8 @@ function ClientLoginContent() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="container mx-auto px-4">
-        <Card className="mx-auto max-w-md">
+    <AuthShell title="Retrouvez vos rendez-vous" description="Connectez-vous pour voir vos réservations à venir et passées." headline="Tous vos rendez-vous, au même endroit." lead="Heure, lieu, lien visio : chaque réservation est rangée ici dès qu'elle est prise.">
+        <Card>
           <CardHeader className="text-center">
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary">
               <Calendar className="h-6 w-6 text-primary-foreground" />
@@ -62,7 +62,7 @@ function ClientLoginContent() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
-                <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+                <div role="alert" className="rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
                   {error}
                 </div>
               )}
@@ -92,23 +92,17 @@ function ClientLoginContent() {
                 {isLoading ? "Connexion..." : "Se connecter"}
               </Button>
             </form>
-            <div className="mt-4 text-center text-sm">
+            <div className="mt-6 text-center text-sm">
               <p className="text-muted-foreground">
                 Pas encore de compte ?{" "}
-                <Link href="/client/register" className="text-primary hover:underline">
+                <Link href="/client/register" className="font-medium text-foreground underline underline-offset-4">
                   Créer un compte
                 </Link>
               </p>
             </div>
-            <div className="mt-4 text-center text-sm">
-              <Link href="/" className="text-muted-foreground hover:underline">
-                Retour à l'accueil
-              </Link>
-            </div>
           </CardContent>
         </Card>
-      </div>
-    </div>
+    </AuthShell>
   );
 }
 

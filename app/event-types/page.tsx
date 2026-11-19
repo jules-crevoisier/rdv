@@ -2,14 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import { MainLayout } from "@/components/layout/main-layout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Clock, Plus, Edit, Trash2, ExternalLink, Calendar, Globe, Lock, Archive, XCircle, ChevronDown } from "lucide-react";
 import Link from "next/link";
-import type { EventType, TimeSlot } from "@/lib/types";
-import { formatDate } from "@/lib/utils";
+import { Archive, CalendarClock, ChevronDown, Check, ExternalLink, Globe, Lock, MoreHorizontal, Pencil, Plus, Trash2, XCircle } from "lucide-react";
+import { MainLayout } from "@/components/layout/main-layout";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -17,14 +13,20 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { PageHeader } from "@/components/app/page-header";
+import { PageSkeleton } from "@/components/app/loading";
+import { EmptyState } from "@/components/app/empty-state";
+import { CopyButton } from "@/components/app/copy-button";
+import { cn } from "@/lib/utils";
+import type { TimeSlot } from "@/lib/types";
 
 type EventTypeFromDB = {
   id: string;
@@ -56,26 +58,23 @@ export default function EventTypesPage() {
   const [appointments, setAppointments] = useState<AppointmentFromDB[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [toDelete, setToDelete] = useState<EventTypeFromDB | null>(null);
+  const [origin] = useState(() => (typeof window === "undefined" ? "" : window.location.origin));
 
   useEffect(() => {
     const fetchEventTypes = async () => {
-      console.log("[EventTypesPage] Début du chargement des types de rendez-vous");
-      console.log("[EventTypesPage] Statut de session:", sessionStatus);
-      console.log("[EventTypesPage] Session:", session);
       
       if (sessionStatus === "loading") {
-        console.log("[EventTypesPage] Session en cours de chargement, attente...");
         return;
       }
 
       if (!session?.user) {
-        console.log("[EventTypesPage] Pas de session, redirection vers login");
         setIsLoading(false);
         return;
       }
 
       try {
-        console.log("[EventTypesPage] Appel API /api/event-types et /api/appointments");
         const [eventTypesResponse, appointmentsResponse] = await Promise.all([
           fetch("/api/event-types"),
           fetch("/api/appointments"),
@@ -90,12 +89,10 @@ export default function EventTypesPage() {
         }
 
         const eventTypesData = await eventTypesResponse.json();
-        console.log("[EventTypesPage] Types reçus:", eventTypesData.length);
         setEventTypes(eventTypesData);
 
         if (appointmentsResponse.ok) {
           const appointmentsData = await appointmentsResponse.json();
-          console.log("[EventTypesPage] Rendez-vous reçus:", appointmentsData.length);
           setAppointments(appointmentsData);
         }
       } catch (error) {
@@ -110,24 +107,20 @@ export default function EventTypesPage() {
   }, [session, sessionStatus]);
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Êtes-vous sûr de vouloir supprimer ce type de rendez-vous ?")) {
-      return;
-    }
 
     try {
-      console.log("[EventTypesPage] Suppression du type:", id);
       const response = await fetch(`/api/event-types/${id}`, {
         method: "DELETE",
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: "Erreur lors de la suppression" }));
-        alert(errorData.error || "Erreur lors de la suppression");
+        setActionError(errorData.error || "La suppression n'a pas abouti.");
         return;
       }
 
-      console.log("[EventTypesPage] Type supprimé, rechargement de la liste");
       // Recharger la liste
+      setToDelete(null);
       const refreshResponse = await fetch("/api/event-types");
       if (refreshResponse.ok) {
         const data = await refreshResponse.json();
@@ -135,19 +128,12 @@ export default function EventTypesPage() {
       }
     } catch (error) {
       console.error("[EventTypesPage] Erreur lors de la suppression:", error);
-      alert("Une erreur est survenue lors de la suppression");
+      setActionError("La suppression n'a pas abouti.");
     }
   };
 
-  const getBookingLink = (id: string) => {
-    if (typeof window === "undefined") return "";
-    return `${window.location.origin}/book/${id}`;
-  };
+  const getBookingLink = (id: string) => `${origin}/book/${id}`;
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    alert("Lien copié dans le presse-papiers !");
-  };
 
   const getStatusLabel = (status: string) => {
     switch (status) {
@@ -164,35 +150,7 @@ export default function EventTypesPage() {
     }
   };
 
-  const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
-    switch (status) {
-      case "online":
-        return "default";
-      case "private":
-        return "secondary";
-      case "archived":
-        return "outline";
-      case "closed":
-        return "destructive";
-      default:
-        return "outline";
-    }
-  };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "online":
-        return <Globe className="h-3 w-3" />;
-      case "private":
-        return <Lock className="h-3 w-3" />;
-      case "archived":
-        return <Archive className="h-3 w-3" />;
-      case "closed":
-        return <XCircle className="h-3 w-3" />;
-      default:
-        return null;
-    }
-  };
 
   const formatTimeSlots = (timeSlotsString: string | undefined): string => {
     if (!timeSlotsString) return "";
@@ -216,13 +174,13 @@ export default function EventTypesPage() {
         .sort()
         .map((day) => {
           const slots = slotsByDay[day];
-          const ranges = slots.map((s) => `${s.startTime}-${s.endTime}`).join(", ");
-          return `${daysOfWeek[day]}: ${ranges}`;
+          const ranges = slots.map((s) => `${s.startTime}–${s.endTime}`).join(", ");
+          return `${daysOfWeek[day]} ${ranges}`;
         });
 
-      return formattedDays.join(" • ");
+      return formattedDays.join("  ·  ");
     } catch (error) {
-      return "Erreur de format";
+      return "";
     }
   };
 
@@ -256,7 +214,6 @@ export default function EventTypesPage() {
 
   const handleStatusChange = async (eventTypeId: string, newStatus: string) => {
     try {
-      console.log("[EventTypesPage] Changement de statut:", eventTypeId, "->", newStatus);
       const response = await fetch(`/api/event-types/${eventTypeId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -265,11 +222,10 @@ export default function EventTypesPage() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: "Erreur lors de la mise à jour" }));
-        alert(errorData.error || "Erreur lors de la mise à jour du statut");
+        setActionError(errorData.error || "Le statut n'a pas pu être changé.");
         return;
       }
 
-      console.log("[EventTypesPage] Statut mis à jour, rechargement de la liste");
       // Recharger la liste
       const refreshResponse = await fetch("/api/event-types");
       if (refreshResponse.ok) {
@@ -278,16 +234,21 @@ export default function EventTypesPage() {
       }
     } catch (error) {
       console.error("[EventTypesPage] Erreur lors du changement de statut:", error);
-      alert("Une erreur est survenue lors de la mise à jour du statut");
+      setActionError("Le statut n'a pas pu être changé.");
     }
   };
+
+  const STATUS = {
+    online: { label: "En ligne", hint: "Visible et réservable par lien", icon: Globe, className: "bg-success/12 text-success" },
+    private: { label: "Privé", hint: "Réservable seulement avec le lien", icon: Lock, className: "bg-accent text-accent-foreground" },
+    archived: { label: "Archivé", hint: "Masqué, lien désactivé", icon: Archive, className: "bg-secondary text-muted-foreground" },
+    closed: { label: "Fermé", hint: "Lien actif, réservations suspendues", icon: XCircle, className: "bg-destructive/10 text-destructive" },
+  } as const;
 
   if (isLoading) {
     return (
       <MainLayout>
-        <div className="flex items-center justify-center py-12">
-          <p>Chargement...</p>
-        </div>
+        <PageSkeleton rows={3} />
       </MainLayout>
     );
   }
@@ -295,12 +256,7 @@ export default function EventTypesPage() {
   if (error) {
     return (
       <MainLayout>
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <h3 className="mb-2 text-lg font-semibold text-destructive">Erreur</h3>
-            <p className="text-center text-muted-foreground">{error}</p>
-          </CardContent>
-        </Card>
+        <EmptyState title="Impossible de charger vos types de rendez-vous" description={error} />
       </MainLayout>
     );
   }
@@ -308,228 +264,187 @@ export default function EventTypesPage() {
   return (
     <MainLayout>
       <div className="space-y-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold">Créneaux de réservation</h1>
-            <p className="text-sm sm:text-base text-muted-foreground">Gérez vos différents types de rendez-vous</p>
-          </div>
-          <Link href="/event-types/new" className="w-full sm:w-auto">
-            <Button className="w-full sm:w-auto">
-              <Plus className="mr-2 h-4 w-4" />
-              Nouveau type
+        <PageHeader
+          eyebrow={`${eventTypes.length} type${eventTypes.length > 1 ? "s" : ""}`}
+          title="Types de rendez-vous"
+          description="Chaque type a son lien de réservation, sa durée et ses horaires."
+          actions={
+            <Button asChild>
+              <Link href="/event-types/new">
+                <Plus />
+                Nouveau type
+              </Link>
             </Button>
-          </Link>
-        </div>
+          }
+        />
+
+        {actionError && (
+          <p role="alert" className="rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            {actionError}
+          </p>
+        )}
 
         {eventTypes.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <Clock className="mb-4 h-12 w-12 text-muted-foreground" />
-              <h3 className="mb-2 text-lg font-semibold">Aucun type de rendez-vous</h3>
-              <p className="mb-4 text-center text-muted-foreground">
-                Créez votre premier type de rendez-vous pour commencer à accepter des réservations
-              </p>
-              <Link href="/event-types/new">
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Créer un type de rendez-vous
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
+          <EmptyState
+            title="Créez votre premier type de rendez-vous"
+            description="Une consultation de 30 minutes, un appel découverte, une séance : donnez-lui un nom, une durée et vos horaires, puis partagez le lien."
+            action={
+              <Button asChild>
+                <Link href="/event-types/new">
+                  <Plus />
+                  Créer un type
+                </Link>
+              </Button>
+            }
+          />
         ) : (
-          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-            {eventTypes.map((eventType) => (
-              <Card key={eventType.id}>
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <CardTitle className="flex items-center gap-2">
-                          <div
-                            className="h-4 w-4 rounded-full"
-                            style={{ backgroundColor: eventType.color }}
-                          />
-                          {eventType.name}
-                        </CardTitle>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Badge 
-                              variant={getStatusVariant(eventType.status)} 
-                              className="flex items-center gap-1 cursor-pointer hover:opacity-80"
-                            >
-                              {getStatusIcon(eventType.status)}
-                              {getStatusLabel(eventType.status)}
-                              <ChevronDown className="h-3 w-3" />
-                            </Badge>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem 
-                              onClick={() => handleStatusChange(eventType.id, "online")}
-                              className="flex items-center gap-2"
-                            >
-                              <Globe className="h-4 w-4" />
-                              En ligne
-                              {eventType.status === "online" && " ✓"}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => handleStatusChange(eventType.id, "private")}
-                              className="flex items-center gap-2"
-                            >
-                              <Lock className="h-4 w-4" />
-                              Privé
-                              {eventType.status === "private" && " ✓"}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => handleStatusChange(eventType.id, "archived")}
-                              className="flex items-center gap-2"
-                            >
-                              <Archive className="h-4 w-4" />
-                              Archivé
-                              {eventType.status === "archived" && " ✓"}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => handleStatusChange(eventType.id, "closed")}
-                              className="flex items-center gap-2"
-                            >
-                              <XCircle className="h-4 w-4" />
-                              Fermé
-                              {eventType.status === "closed" && " ✓"}
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                      <CardDescription className="mt-2">{eventType.description}</CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Durée</span>
-                      <span className="font-medium">{eventType.duration} minutes</span>
-                    </div>
-                    {eventType.bufferTime > 0 && (
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Temps de pause</span>
-                        <span className="font-medium">{eventType.bufferTime} minutes</span>
-                      </div>
-                    )}
-                    {formatTimeSlots(eventType.availability?.timeSlots) && (
-                      <div className="space-y-1">
-                        <p className="text-xs font-medium text-foreground">
-                          {formatTimeSlots(eventType.availability?.timeSlots)}
+          <ul className="grid gap-4 md:grid-cols-2 enter-2">
+            {eventTypes.map((eventType) => {
+              const status = STATUS[eventType.status as keyof typeof STATUS] ?? STATUS.archived;
+              const StatusIcon = status.icon;
+              const hours = formatTimeSlots(eventType.availability?.timeSlots);
+              const upcomingDates = getUpcomingAppointmentDates(eventType.id);
+              const linkOn = isLinkAccessible(eventType.status);
+              return (
+                <li key={eventType.id} className="relative flex flex-col overflow-hidden rounded-2xl border bg-card">
+                  <span className="absolute inset-y-0 left-0 w-1" style={{ backgroundColor: eventType.color }} aria-hidden="true" />
+                  <div className="flex flex-1 flex-col gap-4 p-5 pl-6">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h2 className="text-xl leading-tight">
+                          <Link href={`/event-types/${eventType.id}/edit`} className="outline-none hover:underline underline-offset-4 decoration-1 focus-visible:underline">
+                            {eventType.name}
+                          </Link>
+                        </h2>
+                        <p className="mt-1 font-mono text-xs text-muted-foreground tnum">
+                          {eventType.duration} min
+                          {eventType.bufferTime > 0 && ` · ${eventType.bufferTime} min de pause`}
+                          {eventType.requiresApproval && " · à valider"}
                         </p>
                       </div>
-                    )}
-                    {(() => {
-                      const upcomingDates = getUpcomingAppointmentDates(eventType.id);
-                      if (upcomingDates.length > 0) {
-                        return (
-                          <div className="space-y-1">
-                            <span className="text-xs text-muted-foreground">Prochains rendez-vous</span>
-                            <div className="flex flex-wrap gap-1">
-                              {upcomingDates.map((date, index) => (
-                                <Badge key={index} variant="secondary" className="text-xs">
-                                  {date}
-                                </Badge>
-                              ))}
-                            </div>
-                          </div>
-                        );
-                      }
-                      return null;
-                    })()}
-                    {eventType.requiresApproval && (
-                      <Badge variant="outline" className="w-fit">
-                        Approbation requise
-                      </Badge>
-                    )}
-                    <div className="flex flex-col gap-2 pt-2">
-                      <div className="grid grid-cols-2 gap-2">
-                        <Link href={`/event-types/${eventType.id}/edit`} className="w-full">
-                          <Button variant="outline" className="w-full text-xs sm:text-sm">
-                            <Edit className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                            <span className="hidden sm:inline">Modifier</span>
-                            <span className="sm:hidden">Modif.</span>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            className={cn("inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3 text-xs font-medium outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40", status.className)}
+                            aria-label={`Statut : ${status.label}. Changer le statut`}
+                          >
+                            <StatusIcon className="size-3.5" />
+                            {status.label}
+                            <ChevronDown className="size-3.5 opacity-70" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-64">
+                          {(Object.keys(STATUS) as (keyof typeof STATUS)[]).map((key) => {
+                            const s = STATUS[key];
+                            const Icon = s.icon;
+                            return (
+                              <DropdownMenuItem key={key} onClick={() => handleStatusChange(eventType.id, key)} className="items-start">
+                                <Icon className="mt-0.5" />
+                                <span className="flex-1">
+                                  <span className="block font-medium">{s.label}</span>
+                                  <span className="block text-xs text-muted-foreground">{s.hint}</span>
+                                </span>
+                                {eventType.status === key && <Check className="mt-0.5 text-primary" />}
+                              </DropdownMenuItem>
+                            );
+                          })}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+
+                    {eventType.description && <p className="line-clamp-2 text-sm text-muted-foreground">{eventType.description}</p>}
+
+                    <div className="space-y-1.5 text-sm">
+                      <p className="flex items-start gap-2">
+                        <CalendarClock className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                        {hours ? <span className="font-mono text-xs leading-5 tnum">{hours}</span> : <span className="text-muted-foreground">Aucun horaire défini</span>}
+                      </p>
+                      {upcomingDates.length > 0 && (
+                        <p className="pl-6 text-xs text-muted-foreground">Prochains : {upcomingDates.join(", ")}</p>
+                      )}
+                    </div>
+
+                    {/* Lien de réservation, copiable en un clic */}
+                    <div className={cn("mt-auto flex items-center gap-2 rounded-xl bg-secondary p-1.5 pl-3", !linkOn && "opacity-60")}>
+                      <span className="min-w-0 flex-1 truncate font-mono text-xs text-muted-foreground">
+                        {linkOn ? getBookingLink(eventType.id).replace(/^https?:\/\//, "") : "Lien désactivé (statut " + status.label.toLowerCase() + ")"}
+                      </span>
+                      {linkOn && (
+                        <>
+                          <CopyButton value={getBookingLink(eventType.id)} size="icon-sm" variant="ghost" label="Copier le lien de réservation" />
+                          <Button asChild variant="ghost" size="icon-sm" aria-label="Ouvrir la page de réservation">
+                            <a href={getBookingLink(eventType.id)} target="_blank" rel="noopener noreferrer">
+                              <ExternalLink />
+                            </a>
                           </Button>
-                        </Link>
-                        <Link href={`/event-types/${eventType.id}/availability`} className="w-full">
-                          <Button variant="outline" className="w-full text-xs sm:text-sm">
-                            <Calendar className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                            <span className="hidden sm:inline">Disponibilités</span>
-                            <span className="sm:hidden">Dispo.</span>
-                          </Button>
-                        </Link>
-                      </div>
-                      <div className="flex gap-2">
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button 
-                              variant="outline" 
-                              className="flex-1 text-xs sm:text-sm"
-                              disabled={!isLinkAccessible(eventType.status)}
-                            >
-                              <ExternalLink className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                              <span className="hidden sm:inline">Lien</span>
-                              <span className="sm:hidden">Lien</span>
-                            </Button>
-                          </DialogTrigger>
-                        <DialogContent className="max-w-[95vw] sm:max-w-lg">
-                          <DialogHeader>
-                            <DialogTitle className="text-base sm:text-lg">Lien de réservation</DialogTitle>
-                            <DialogDescription className="text-xs sm:text-sm">
-                              {isLinkAccessible(eventType.status) 
-                                ? "Partagez ce lien pour permettre aux clients de réserver ce type de rendez-vous"
-                                : "Ce type de rendez-vous n'est pas accessible publiquement. Le statut doit être 'En ligne' ou 'Privé' pour partager le lien."}
-                            </DialogDescription>
-                          </DialogHeader>
-                          {isLinkAccessible(eventType.status) ? (
-                            <>
-                              <div className="flex flex-col sm:flex-row gap-2">
-                                <input
-                                  type="text"
-                                  readOnly
-                                  value={getBookingLink(eventType.id)}
-                                  className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-xs sm:text-sm"
-                                />
-                                <Button onClick={() => copyToClipboard(getBookingLink(eventType.id))} className="w-full sm:w-auto">
-                                  Copier
-                                </Button>
-                              </div>
-                              <DialogFooter>
-                                <Button variant="outline" onClick={() => window.open(getBookingLink(eventType.id), "_blank")} className="w-full sm:w-auto">
-                                  Ouvrir
-                                </Button>
-                              </DialogFooter>
-                            </>
-                          ) : (
-                            <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4">
-                              <p className="text-xs sm:text-sm text-destructive">
-                                Le lien de réservation n'est pas disponible car le statut est "{getStatusLabel(eventType.status)}".
-                                Changez le statut en "En ligne" ou "Privé" pour activer le lien.
-                              </p>
-                            </div>
-                          )}
-                        </DialogContent>
-                        </Dialog>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleDelete(eventType.id)}
-                          className="px-2 sm:px-3"
-                        >
-                          <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
-                        </Button>
-                      </div>
+                        </>
+                      )}
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+
+                  <div className="flex items-center gap-2 border-t px-5 py-3 pl-6">
+                    <Button asChild variant="outline" size="sm" className="flex-1">
+                      <Link href={`/event-types/${eventType.id}/edit`}>
+                        <Pencil />
+                        Modifier
+                      </Link>
+                    </Button>
+                    <Button asChild variant="outline" size="sm" className="flex-1">
+                      <Link href={`/event-types/${eventType.id}/availability`}>
+                        <CalendarClock />
+                        Horaires
+                      </Link>
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon-sm" aria-label={`Plus d'actions pour ${eventType.name}`}>
+                          <MoreHorizontal />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {linkOn && (
+                          <>
+                            <DropdownMenuItem asChild>
+                              <a href={getBookingLink(eventType.id)} target="_blank" rel="noopener noreferrer">
+                                <ExternalLink />
+                                Voir comme un client
+                              </a>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                          </>
+                        )}
+                        <DropdownMenuItem variant="destructive" onClick={() => setToDelete(eventType)}>
+                          <Trash2 />
+                          Supprimer
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
         )}
       </div>
+
+      <Dialog open={!!toDelete} onOpenChange={(open) => !open && setToDelete(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Supprimer « {toDelete?.name} » ?</DialogTitle>
+            <DialogDescription>
+              Le lien de réservation cesse de fonctionner et les rendez-vous de ce type sont supprimés avec lui. Pour simplement le masquer, archivez-le.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => toDelete && handleStatusChange(toDelete.id, "archived").then(() => setToDelete(null))}>
+              Archiver plutôt
+            </Button>
+            <Button variant="destructive" onClick={() => toDelete && handleDelete(toDelete.id)}>
+              Supprimer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 }

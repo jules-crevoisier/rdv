@@ -12,15 +12,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Minus, Plus } from "lucide-react";
 import Link from "next/link";
+import { PageHeader } from "@/components/app/page-header";
+import { PageSkeleton } from "@/components/app/loading";
+import { ColorSwatches } from "@/components/app/color-swatches";
 
-const colors = [
-  { name: "Bleu", value: "#3b82f6" },
-  { name: "Vert", value: "#10b981" },
-  { name: "Rouge", value: "#ef4444" },
-  { name: "Violet", value: "#8b5cf6" },
-  { name: "Orange", value: "#f59e0b" },
-  { name: "Rose", value: "#ec4899" },
-];
 
 type EventTypeFromDB = {
   id: string;
@@ -45,19 +40,17 @@ export default function EditEventTypePage() {
   const [formData, setFormData] = useState<EventTypeFromDB | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchEventType = async () => {
-      console.log("[EditEventTypePage] Chargement du type:", id);
       if (!session?.user) {
-        console.log("[EditEventTypePage] Pas de session");
         setIsLoading(false);
         return;
       }
 
       try {
         const response = await fetch(`/api/event-types/${id}`);
-        console.log("[EditEventTypePage] Réponse status:", response.status);
         
         if (!response.ok) {
           console.error("[EditEventTypePage] Erreur:", response.status);
@@ -66,7 +59,6 @@ export default function EditEventTypePage() {
         }
 
         const data = await response.json();
-        console.log("[EditEventTypePage] Type chargé:", data);
         setFormData(data);
       } catch (error) {
         console.error("[EditEventTypePage] Erreur lors du chargement:", error);
@@ -81,15 +73,15 @@ export default function EditEventTypePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError(null);
     if (!formData || !formData.name || !formData.description) {
-      alert("Veuillez remplir tous les champs obligatoires");
+      setFormError("Donnez un nom et une description à ce type de rendez-vous.");
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      console.log("[EditEventTypePage] Envoi des modifications:", formData);
       const response = await fetch(`/api/event-types/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -106,20 +98,18 @@ export default function EditEventTypePage() {
         }),
       });
 
-      console.log("[EditEventTypePage] Réponse status:", response.status);
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({ error: "Erreur lors de la mise à jour" }));
-        alert(error.error || "Erreur lors de la mise à jour");
+        setFormError(error.error || "L\'enregistrement n\'a pas abouti.");
         setIsSubmitting(false);
         return;
       }
 
-      console.log("[EditEventTypePage] Type mis à jour avec succès");
       router.push("/event-types");
     } catch (error) {
       console.error("[EditEventTypePage] Erreur:", error);
-      alert("Une erreur est survenue");
+      setFormError("L'enregistrement n'a pas abouti. Vérifiez votre connexion.");
       setIsSubmitting(false);
     }
   };
@@ -127,49 +117,46 @@ export default function EditEventTypePage() {
   if (isLoading || !formData) {
     return (
       <MainLayout>
-        <div className="flex items-center justify-center py-12">
-          <p>Chargement...</p>
-        </div>
+        <PageSkeleton rows={3} />
       </MainLayout>
     );
   }
 
   return (
     <MainLayout>
-      <div className="mx-auto max-w-2xl space-y-8">
-        <div className="flex items-center gap-4">
-          <Link href="/event-types">
-            <Button variant="ghost" size="icon">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
+      <div className="mx-auto max-w-3xl space-y-8">
+        <div className="space-y-4">
+          <Link href="/event-types" className="inline-flex min-h-11 items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
+            <ArrowLeft className="size-4" />
+            Types de rendez-vous
           </Link>
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold">Modifier le type de rendez-vous</h1>
-            <p className="text-sm sm:text-base text-muted-foreground">Modifiez les détails de votre type de rendez-vous</p>
-          </div>
+          <PageHeader
+            title={formData.name || "Modifier le type"}
+            description="Les changements s'appliquent aux prochaines réservations, pas à celles déjà prises."
+          />
         </div>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base sm:text-lg">Informations de base</CardTitle>
-              <CardDescription className="text-xs sm:text-sm">Définissez les détails de votre type de rendez-vous</CardDescription>
+              <CardTitle>L&apos;essentiel</CardTitle>
+              <CardDescription>Ce que voit le client sur la page de réservation.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-5">
               <div className="space-y-2">
-                <Label htmlFor="name" className="text-sm">Nom *</Label>
+                <Label htmlFor="name">Nom</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="Ex: Consultation initiale"
                   required
-                  className="text-sm sm:text-base"
+                 
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description" className="text-sm">Description *</Label>
+                <Label htmlFor="description">Description</Label>
                 <Textarea
                   id="description"
                   value={formData.description}
@@ -177,13 +164,13 @@ export default function EditEventTypePage() {
                   placeholder="Décrivez ce type de rendez-vous"
                   rows={4}
                   required
-                  className="text-sm sm:text-base"
+                 
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid gap-5 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="duration" className="text-sm">Durée (minutes) *</Label>
+                  <Label htmlFor="duration">Durée (minutes)</Label>
                   <div className="flex items-center gap-2">
                     <Button
                       type="button"
@@ -196,14 +183,14 @@ export default function EditEventTypePage() {
                       }}
                       disabled={!formData || formData.duration <= 15}
                     >
-                      <Minus className="h-4 w-4" />
+                      <Minus />
                     </Button>
                     <Input
                       id="duration"
                       type="number"
                       value={formData.duration}
                       readOnly
-                      className="text-center text-sm sm:text-base"
+                      className="text-center font-mono tnum"
                       min="15"
                       step="5"
                     />
@@ -218,46 +205,18 @@ export default function EditEventTypePage() {
                       }}
                       disabled={!formData || formData.duration >= 120}
                     >
-                      <Plus className="h-4 w-4" />
+                      <Plus />
                     </Button>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="color" className="text-sm">Couleur</Label>
-                  <Select
-                    value={formData.color}
-                    onValueChange={(value) => setFormData({ ...formData, color: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue>
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="h-4 w-4 rounded-full"
-                            style={{ backgroundColor: formData.color }}
-                          />
-                          {colors.find((c) => c.value === formData.color)?.name}
-                        </div>
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {colors.map((color) => (
-                        <SelectItem key={color.value} value={color.value}>
-                          <div className="flex items-center gap-2">
-                            <div
-                              className="h-4 w-4 rounded-full"
-                              style={{ backgroundColor: color.value }}
-                            />
-                            {color.name}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label>Couleur dans l&apos;agenda</Label>
+                  <ColorSwatches value={formData.color} onChange={(value) => setFormData({ ...formData, color: value })} />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid gap-5 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="bufferTime">Temps de pause (minutes)</Label>
                   <div className="flex items-center gap-2">
@@ -272,14 +231,14 @@ export default function EditEventTypePage() {
                       }}
                       disabled={!formData || formData.bufferTime <= 0}
                     >
-                      <Minus className="h-4 w-4" />
+                      <Minus />
                     </Button>
                     <Input
                       id="bufferTime"
                       type="number"
                       value={formData.bufferTime}
                       readOnly
-                      className="text-center text-sm sm:text-base"
+                      className="text-center font-mono tnum"
                       min="0"
                       step="5"
                     />
@@ -294,18 +253,18 @@ export default function EditEventTypePage() {
                       }}
                       disabled={!formData || formData.bufferTime >= 60}
                     >
-                      <Plus className="h-4 w-4" />
+                      <Plus />
                     </Button>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="status">Statut du formulaire</Label>
+                  <Label htmlFor="status">Statut</Label>
                   <Select
                     value={formData.status}
-                    onValueChange={(value: any) => setFormData({ ...formData, status: value })}
+                    onValueChange={(value: "online" | "private" | "archived" | "closed") => setFormData({ ...formData, status: value })}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -318,26 +277,27 @@ export default function EditEventTypePage() {
                 </div>
               </div>
 
-              <div className="flex items-center space-x-2">
+              <div className="flex items-start gap-3 rounded-xl border p-4">
                 <input
                   type="checkbox"
                   id="requiresApproval"
                   checked={formData.requiresApproval}
                   onChange={(e) => setFormData({ ...formData, requiresApproval: e.target.checked })}
-                  className="h-4 w-4 rounded border-gray-300"
+                  className="mt-0.5 size-5 shrink-0 cursor-pointer accent-[var(--primary)]"
                 />
-                <Label htmlFor="requiresApproval" className="cursor-pointer text-sm">
-                  Nécessite une approbation manuelle
+                <Label htmlFor="requiresApproval" className="block cursor-pointer space-y-0.5">
+                  <span className="block">Valider chaque demande moi-même</span>
+                  <span className="block font-normal text-muted-foreground">Le créneau reste en attente jusqu&apos;à votre confirmation.</span>
                 </Label>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="meetingType" className="text-sm">Type de rendez-vous</Label>
+                <Label htmlFor="meetingType">Format</Label>
                 <Select
                   value={formData.meetingType || "in-person"}
                   onValueChange={(value: "in-person" | "video") => setFormData({ ...formData, meetingType: value })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -348,13 +308,13 @@ export default function EditEventTypePage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="location" className="text-sm">Lieu (optionnel)</Label>
+                <Label htmlFor="location">Lieu <span className="font-normal text-muted-foreground">(facultatif)</span></Label>
                 <Input
                   id="location"
                   value={formData.location || ""}
                   onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                   placeholder={(formData.meetingType || "in-person") === "video" ? "Ex: https://meet.google.com/xxx-yyyy-zzz (optionnel)" : "Ex: 123 Rue de la Paix, Paris"}
-                  className="text-sm sm:text-base"
+                 
                 />
                 {(formData.meetingType || "in-person") === "video" && (
                   <p className="text-xs text-muted-foreground">
@@ -367,14 +327,18 @@ export default function EditEventTypePage() {
             </CardContent>
           </Card>
 
-          <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4 pt-4">
-            <Link href="/event-types" className="w-full sm:w-auto">
-              <Button type="button" variant="outline" className="w-full sm:w-auto">
-                Annuler
-              </Button>
-            </Link>
-            <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
-              {isSubmitting ? "Enregistrement..." : "Enregistrer"}
+          {formError && (
+            <p role="alert" className="rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
+              {formError}
+            </p>
+          )}
+
+          <div className="sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 -mx-4 flex gap-3 border-t bg-background/90 px-4 py-3 backdrop-blur sm:static sm:mx-0 sm:justify-end sm:border-0 sm:bg-transparent sm:p-0 lg:bottom-0">
+            <Button asChild type="button" variant="outline" className="flex-1 sm:flex-none">
+              <Link href="/event-types">Annuler</Link>
+            </Button>
+            <Button type="submit" disabled={isSubmitting} className="flex-1 sm:flex-none">
+              {isSubmitting ? "Enregistrement…" : "Enregistrer"}
             </Button>
           </div>
         </form>

@@ -1,22 +1,33 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Check, ExternalLink, Mail, MapPin, MoreHorizontal, Phone, Trash2, Video, X } from "lucide-react";
 import { MainLayout } from "@/components/layout/main-layout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { formatDate, formatTime, formatDateTime } from "@/lib/utils";
-import { Calendar, User, Mail, Phone, FileText, Trash2, Check, X, ArrowRight, Clock, MapPin, Video, ExternalLink } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { PageHeader } from "@/components/app/page-header";
+import { PageSkeleton } from "@/components/app/loading";
+import { EmptyState } from "@/components/app/empty-state";
+import { StatusPill } from "@/components/app/status";
+import { Ticket } from "@/components/app/ticket";
+import { cn, formatDateTime } from "@/lib/utils";
 
 type AppointmentFromDB = {
   id: string;
@@ -26,6 +37,7 @@ type AppointmentFromDB = {
   eventType: {
     id: string;
     name: string;
+    color?: string;
   };
   startTime: string;
   endTime: string;
@@ -37,497 +49,334 @@ type AppointmentFromDB = {
   meetingType?: string;
   videoLink?: string | null;
   status: string;
-  createdAt: string;
-  updatedAt: string;
 };
 
-export default function AppointmentsPage() {
+type Filter = "upcoming" | "pending" | "past" | "all";
+const FILTERS: Filter[] = ["upcoming", "pending", "past", "all"];
+
+const dayLabel = (d: Date) => {
+  const today = new Date();
+  const tomorrow = new Date();
+  tomorrow.setDate(today.getDate() + 1);
+  if (d.toDateString() === today.toDateString()) return "Aujourd'hui";
+  if (d.toDateString() === tomorrow.toDateString()) return "Demain";
+  return d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: d.getFullYear() !== today.getFullYear() ? "numeric" : undefined });
+};
+
+function AppointmentsContent() {
   const { data: session, status: sessionStatus } = useSession();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const initial = searchParams.get("tab") as Filter | null;
+  const [filter, setFilter] = useState<Filter>(initial && FILTERS.includes(initial) ? initial : "upcoming");
+  const [scope, setScope] = useState<"received" | "mine">("received");
   const [appointments, setAppointments] = useState<AppointmentFromDB[]>([]);
-  const [selectedAppointment, setSelectedAppointment] = useState<AppointmentFromDB | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [toDelete, setToDelete] = useState<AppointmentFromDB | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const reload = async () => {
+    const response = await fetch("/api/appointments");
+    if (response.ok) setAppointments(await response.json());
+  };
 
   useEffect(() => {
     const fetchAppointments = async () => {
-      if (sessionStatus === "loading") {
-        return;
-      }
-
+      if (sessionStatus === "loading") return;
       if (!session?.user) {
         setIsLoading(false);
         return;
       }
-
       try {
-        const response = await fetch("/api/appointments");
-        if (!response.ok) {
-          console.error("Error fetching appointments:", response.status);
-          setIsLoading(false);
-          return;
-        }
-
-        const data = await response.json();
-        setAppointments(data);
+        await reload();
       } catch (error) {
         console.error("Error fetching appointments:", error);
       } finally {
         setIsLoading(false);
       }
     };
-
     fetchAppointments();
   }, [session, sessionStatus]);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Êtes-vous sûr de vouloir supprimer ce rendez-vous ?")) {
-      return;
-    }
+  const changeFilter = (value: string) => {
+    setFilter(value as Filter);
+    router.replace(`/appointments?tab=${value}`, { scroll: false });
+  };
 
+  const handleDelete = async () => {
+    if (!toDelete) return;
+    setBusyId(toDelete.id);
+    setActionError(null);
     try {
-      const response = await fetch(`/api/appointments/${id}`, {
-        method: "DELETE",
-      });
-
+      const response = await fetch(`/api/appointments/${toDelete.id}`, { method: "DELETE" });
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: "Erreur lors de la suppression" }));
-        alert(errorData.error || "Erreur lors de la suppression");
+        const data = await response.json().catch(() => ({}));
+        setActionError(data.error || "La suppression n'a pas abouti.");
         return;
       }
-
-      // Recharger la liste
-      const refreshResponse = await fetch("/api/appointments");
-      if (refreshResponse.ok) {
-        const data = await refreshResponse.json();
-        setAppointments(data);
-      }
-    } catch (error) {
-      console.error("Error deleting appointment:", error);
-      alert("Une erreur est survenue lors de la suppression");
+      setToDelete(null);
+      await reload();
+    } catch {
+      setActionError("La suppression n'a pas abouti.");
+    } finally {
+      setBusyId(null);
     }
   };
 
   const handleStatusChange = async (id: string, newStatus: string) => {
+    setBusyId(id);
+    setActionError(null);
     try {
       const response = await fetch(`/api/appointments/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
       });
-
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: "Erreur lors de la mise à jour" }));
-        alert(errorData.error || "Erreur lors de la mise à jour");
+        const data = await response.json().catch(() => ({}));
+        setActionError(data.error || "La mise à jour n'a pas abouti.");
         return;
       }
-
-      // Recharger la liste
-      const refreshResponse = await fetch("/api/appointments");
-      if (refreshResponse.ok) {
-        const data = await refreshResponse.json();
-        setAppointments(data);
-      }
-    } catch (error) {
-      console.error("Error updating appointment:", error);
-      alert("Une erreur est survenue lors de la mise à jour");
+      await reload();
+    } catch {
+      setActionError("La mise à jour n'a pas abouti.");
+    } finally {
+      setBusyId(null);
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-      pending: "outline",
-      confirmed: "default",
-      cancelled: "destructive",
-      completed: "secondary",
-    };
-    const labels: Record<string, string> = {
-      pending: "En attente",
-      confirmed: "Confirmé",
-      cancelled: "Annulé",
-      completed: "Terminé",
-    };
-    return <Badge variant={variants[status] || "outline"}>{labels[status] || status}</Badge>;
-  };
-
-  // Distinguer les rendez-vous où l'utilisateur est propriétaire vs client
   const isOwner = (apt: AppointmentFromDB) => apt.userId === session?.user?.id;
-  const isClient = (apt: AppointmentFromDB) => 
-    apt.clientId === session?.user?.id || 
-    apt.clientEmail === session?.user?.email;
+  const isClient = (apt: AppointmentFromDB) =>
+    apt.clientId === session?.user?.id || apt.clientEmail === session?.user?.email;
 
-  // Séparer les rendez-vous en deux catégories
-  const myAppointments = appointments.filter((apt) => isClient(apt) && !isOwner(apt)); // Rendez-vous pris par l'utilisateur
-  const receivedAppointments = appointments.filter((apt) => isOwner(apt)); // Rendez-vous reçus (créés par l'utilisateur)
+  const mine = appointments.filter((a) => isClient(a) && !isOwner(a));
+  const received = appointments.filter((a) => isOwner(a));
+  const base = scope === "mine" ? mine : received;
+  const now = new Date();
 
-  const allAppointments = appointments.sort(
-    (a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
-  );
-  const upcomingAppointments = appointments
-    .filter((a) => new Date(a.startTime) > new Date() && a.status !== "cancelled")
-    .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
-  const pastAppointments = appointments
-    .filter((a) => new Date(a.startTime) < new Date() || a.status === "cancelled")
-    .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
-  const pendingAppointments = appointments
-    .filter((a) => a.status === "pending")
-    .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+  const lists: Record<Filter, AppointmentFromDB[]> = useMemo(() => {
+    const byStartAsc = (a: AppointmentFromDB, b: AppointmentFromDB) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
+    return {
+      upcoming: base.filter((a) => new Date(a.startTime) > now && a.status !== "cancelled").sort(byStartAsc),
+      pending: base.filter((a) => a.status === "pending").sort(byStartAsc),
+      past: base.filter((a) => new Date(a.startTime) < now || a.status === "cancelled").sort((a, b) => -byStartAsc(a, b)),
+      all: [...base].sort((a, b) => -byStartAsc(a, b)),
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appointments, scope, session]);
 
-  const renderAppointmentCard = (appointment: AppointmentFromDB) => {
-    const userIsClient = isClient(appointment);
-    const userIsOwner = isOwner(appointment);
-    
-    return (
-    <Card 
-      key={appointment.id} 
-      className={`relative overflow-hidden ${
-        userIsClient && !userIsOwner 
-          ? "border-l-4 border-l-primary bg-primary/5" 
-          : "border-l-4 border-l-muted"
-      }`}
-    >
-      <CardHeader>
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-2">
-              {userIsClient && !userIsOwner && (
-                <Badge variant="default" className="text-xs font-semibold">
-                  <ArrowRight className="mr-1 h-3 w-3" />
-                  Mon rendez-vous
-                </Badge>
-              )}
-              {userIsOwner && (
-                <Badge variant="outline" className="text-xs">
-                  <User className="mr-1 h-3 w-3" />
-                  Rendez-vous reçu
-                </Badge>
-              )}
-            </div>
-            <CardTitle className="flex items-center gap-2">
-              {userIsClient && !userIsOwner ? (
-                <>
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                    <User className="h-4 w-4" />
-                  </div>
-                  <span>Vous</span>
-                </>
-              ) : (
-                <>
-                  <User className="h-5 w-5 text-muted-foreground" />
-                  <span>{appointment.clientName}</span>
-                </>
-              )}
-            </CardTitle>
-            <CardDescription className="mt-1">{appointment.eventType.name}</CardDescription>
-          </div>
-          {getStatusBadge(appointment.status)}
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 text-sm">
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-            <span>{formatDateTime(appointment.startTime)}</span>
-          </div>
-          {!userIsClient && (
-            <>
-              <div className="flex items-center gap-2 text-sm">
-                <Mail className="h-4 w-4 text-muted-foreground" />
-                <span>{appointment.clientEmail}</span>
-              </div>
-              {appointment.clientPhone && (
-                <div className="flex items-center gap-2 text-sm">
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                  <span>{appointment.clientPhone}</span>
-                </div>
-              )}
-            </>
-          )}
-          {appointment.location && (
-            <div className="flex items-center gap-2 text-sm">
-              <MapPin className="h-4 w-4 text-muted-foreground" />
-              <span className="text-muted-foreground">{appointment.location}</span>
-            </div>
-          )}
-          {appointment.meetingType === "video" && appointment.videoLink && (
-            <div className="flex items-center gap-2 text-sm">
-              <Video className="h-4 w-4 text-muted-foreground" />
-              <a
-                href={appointment.videoLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary hover:underline flex items-center gap-1"
-              >
-                Lien visio
-                <ExternalLink className="h-3 w-3" />
-              </a>
-            </div>
-          )}
-          {appointment.notes && (
-            <div className="flex items-start gap-2 text-sm">
-              <FileText className="h-4 w-4 text-muted-foreground mt-0.5" />
-              <span className="text-muted-foreground">{appointment.notes}</span>
-            </div>
-          )}
-          <div className="flex flex-col sm:flex-row gap-2 pt-2">
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="flex-1 w-full sm:w-auto" onClick={() => setSelectedAppointment(appointment)}>
-                  Détails
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Détails du rendez-vous</DialogTitle>
-                  <DialogDescription>Informations complètes sur le rendez-vous</DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
-                  {userIsClient && !userIsOwner && (
-                    <div className="rounded-lg bg-primary/10 p-3">
-                      <p className="text-sm font-medium text-primary">Ceci est un rendez-vous que vous avez pris</p>
-                    </div>
-                  )}
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Client</p>
-                    <p className="text-lg font-semibold">{userIsClient && !userIsOwner ? "Vous" : appointment.clientName}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Email</p>
-                    <p>{appointment.clientEmail}</p>
-                  </div>
-                  {appointment.clientPhone && (
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Téléphone</p>
-                      <p>{appointment.clientPhone}</p>
-                    </div>
-                  )}
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Type de rendez-vous</p>
-                    <p>{appointment.eventType.name}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Date et heure</p>
-                    <p>{formatDateTime(appointment.startTime)}</p>
-                    <p className="text-sm text-muted-foreground">
-                      Durée: {formatTime(appointment.startTime)} - {formatTime(appointment.endTime)}
-                    </p>
-                  </div>
-                  {appointment.location && (
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Lieu</p>
-                      <p className="text-sm">{appointment.location}</p>
-                    </div>
-                  )}
-                  {appointment.meetingType === "video" && appointment.videoLink && (
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Lien de visioconférence</p>
-                      <a
-                        href={appointment.videoLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-primary hover:underline flex items-center gap-1"
-                      >
-                        {appointment.videoLink}
-                        <ExternalLink className="h-3 w-3" />
-                      </a>
-                    </div>
-                  )}
-                  {appointment.notes && (
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Notes</p>
-                      <p className="text-sm">{appointment.notes}</p>
-                    </div>
-                  )}
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Statut</p>
-                    {getStatusBadge(appointment.status)}
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
-            {/* Les actions de confirmation/annulation ne sont disponibles que pour les rendez-vous reçus */}
-            {userIsOwner && appointment.status === "pending" && (
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex-1 sm:flex-initial"
-                  onClick={() => handleStatusChange(appointment.id, "confirmed")}
-                  title="Confirmer"
-                >
-                  <Check className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Confirmer</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex-1 sm:flex-initial"
-                  onClick={() => handleStatusChange(appointment.id, "cancelled")}
-                  title="Annuler"
-                >
-                  <X className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Annuler</span>
-                </Button>
-              </div>
-            )}
-            {/* Les utilisateurs peuvent supprimer leurs propres rendez-vous ou ceux qu'ils ont reçus */}
-            <Button
-              variant="destructive"
-              size="sm"
-              className="w-full sm:w-auto"
-              onClick={() => handleDelete(appointment.id)}
-              title="Supprimer"
-            >
-              <Trash2 className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Supprimer</span>
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-    );
-  };
+  const groups = useMemo(() => {
+    const map = new Map<string, AppointmentFromDB[]>();
+    lists[filter].forEach((a) => {
+      const key = new Date(a.startTime).toDateString();
+      map.set(key, [...(map.get(key) ?? []), a]);
+    });
+    return Array.from(map.entries());
+  }, [lists, filter]);
 
   if (isLoading) {
     return (
       <MainLayout>
-        <div className="flex items-center justify-center py-12">
-          <p>Chargement...</p>
-        </div>
+        <PageSkeleton rows={4} />
       </MainLayout>
     );
   }
 
+  const labels: Record<Filter, string> = { upcoming: "À venir", pending: "En attente", past: "Passés", all: "Tous" };
+  const empty: Record<Filter, { title: string; description: string }> = {
+    upcoming: { title: "Rien à venir", description: "Les nouveaux rendez-vous s'affichent ici dès qu'un client réserve." },
+    pending: { title: "Aucune demande en attente", description: "Les rendez-vous à valider arrivent ici." },
+    past: { title: "Pas encore d'historique", description: "Les rendez-vous terminés ou annulés sont rangés ici." },
+    all: { title: "Aucun rendez-vous", description: "Partagez le lien d'un type de rendez-vous pour recevoir vos premières réservations." },
+  };
+
   return (
     <MainLayout>
       <div className="space-y-8">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">Réservations</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">Gérez tous vos rendez-vous</p>
+        <PageHeader
+          eyebrow={`${received.length} reçus${mine.length ? ` · ${mine.length} pris` : ""}`}
+          title="Réservations"
+          description="Validez les demandes, retrouvez les coordonnées, gardez l'historique."
+        />
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between enter-2">
+          <Tabs value={filter} onValueChange={changeFilter}>
+            <TabsList className="w-full sm:w-fit">
+              {FILTERS.map((f) => (
+                <TabsTrigger key={f} value={f} className="gap-1.5">
+                  {labels[f]}
+                  <span className="font-mono text-[0.6875rem] opacity-70 tnum">{lists[f].length}</span>
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+          {mine.length > 0 && (
+            <div className="flex rounded-xl border bg-card p-1 text-sm" role="group" aria-label="Afficher">
+              {(["received", "mine"] as const).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  aria-pressed={scope === s}
+                  onClick={() => setScope(s)}
+                  className={cn(
+                    "h-9 flex-1 rounded-lg px-3 font-medium transition-colors sm:flex-none",
+                    scope === s ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {s === "received" ? "Reçus" : "Pris par moi"}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
-        <Tabs defaultValue="all" className="space-y-4">
-          <div className="overflow-x-auto">
-            <TabsList className="grid w-full min-w-[600px] grid-cols-6 md:min-w-0">
-              <TabsTrigger value="all" className="text-xs sm:text-sm">Tous ({allAppointments.length})</TabsTrigger>
-              <TabsTrigger value="my" className="text-xs sm:text-sm">Mes RDV ({myAppointments.length})</TabsTrigger>
-              <TabsTrigger value="received" className="text-xs sm:text-sm">Reçus ({receivedAppointments.length})</TabsTrigger>
-              <TabsTrigger value="pending" className="text-xs sm:text-sm">En attente ({pendingAppointments.length})</TabsTrigger>
-              <TabsTrigger value="upcoming" className="text-xs sm:text-sm">À venir ({upcomingAppointments.length})</TabsTrigger>
-              <TabsTrigger value="past" className="text-xs sm:text-sm">Passés ({pastAppointments.length})</TabsTrigger>
-            </TabsList>
+        {actionError && (
+          <p role="alert" className="rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            {actionError}
+          </p>
+        )}
+
+        {groups.length === 0 ? (
+          <EmptyState {...empty[filter]} />
+        ) : (
+          <div className="space-y-8 enter-3">
+            {groups.map(([key, items]) => (
+              <section key={key} aria-label={dayLabel(new Date(key))}>
+                <h2 className="mb-3 flex items-baseline gap-3 text-lg first-letter:uppercase">
+                  {dayLabel(new Date(key))}
+                  <span className="font-mono text-xs text-muted-foreground tnum">{items.length}</span>
+                </h2>
+                <ol className="space-y-3">
+                  {items.map((apt) => {
+                    const own = isOwner(apt);
+                    const myBooking = isClient(apt) && !own;
+                    const dimmed = apt.status === "cancelled" || new Date(apt.endTime) < now;
+                    return (
+                      <Ticket key={apt.id} as="li" start={apt.startTime} end={apt.endTime} color={apt.eventType.color} muted={dimmed}>
+                        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                          <div className="min-w-0 space-y-1.5">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="font-medium">{myBooking ? "Votre rendez-vous" : apt.clientName}</p>
+                              <StatusPill status={apt.status} />
+                            </div>
+                            <p className="text-sm text-muted-foreground">{apt.eventType.name}</p>
+                            <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                              {!myBooking && (
+                                <a href={`mailto:${apt.clientEmail}`} className="inline-flex min-w-0 items-center gap-1.5 hover:text-foreground">
+                                  <Mail className="size-3.5 shrink-0" />
+                                  <span className="truncate">{apt.clientEmail}</span>
+                                </a>
+                              )}
+                              {!myBooking && apt.clientPhone && (
+                                <a href={`tel:${apt.clientPhone}`} className="inline-flex items-center gap-1.5 hover:text-foreground">
+                                  <Phone className="size-3.5" />
+                                  {apt.clientPhone}
+                                </a>
+                              )}
+                              {apt.location && (
+                                <span className="inline-flex items-center gap-1.5">
+                                  <MapPin className="size-3.5" />
+                                  {apt.location}
+                                </span>
+                              )}
+                              {apt.meetingType === "video" && apt.videoLink && (
+                                <a href={apt.videoLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-primary hover:underline underline-offset-4">
+                                  <Video className="size-3.5" />
+                                  Rejoindre la visio
+                                  <ExternalLink className="size-3" />
+                                </a>
+                              )}
+                            </div>
+                            {apt.notes && (
+                              <p className="max-w-prose border-l-2 pl-3 text-sm italic text-muted-foreground">{apt.notes}</p>
+                            )}
+                          </div>
+
+                          <div className="flex shrink-0 items-center gap-2">
+                            {own && apt.status === "pending" && (
+                              <>
+                                <Button size="sm" onClick={() => handleStatusChange(apt.id, "confirmed")} disabled={busyId === apt.id} className="flex-1 md:flex-none">
+                                  <Check />
+                                  Confirmer
+                                </Button>
+                                <Button size="sm" variant="outline" onClick={() => handleStatusChange(apt.id, "cancelled")} disabled={busyId === apt.id} className="flex-1 md:flex-none">
+                                  <X />
+                                  Refuser
+                                </Button>
+                              </>
+                            )}
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon-sm" aria-label={`Plus d'actions pour ${apt.clientName}`}>
+                                  <MoreHorizontal />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-52">
+                                {own && apt.status === "confirmed" && new Date(apt.endTime) < now && (
+                                  <DropdownMenuItem onClick={() => handleStatusChange(apt.id, "completed")}>
+                                    <Check />
+                                    Marquer comme terminé
+                                  </DropdownMenuItem>
+                                )}
+                                {own && apt.status !== "cancelled" && apt.status !== "pending" && (
+                                  <DropdownMenuItem onClick={() => handleStatusChange(apt.id, "cancelled")}>
+                                    <X />
+                                    Annuler le rendez-vous
+                                  </DropdownMenuItem>
+                                )}
+                                {own && apt.status !== "pending" && <DropdownMenuSeparator />}
+                                <DropdownMenuItem variant="destructive" onClick={() => setToDelete(apt)}>
+                                  <Trash2 />
+                                  Supprimer
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </div>
+                      </Ticket>
+                    );
+                  })}
+                </ol>
+              </section>
+            ))}
           </div>
-
-          <TabsContent value="all" className="space-y-4">
-            {allAppointments.length === 0 ? (
-              <Card>
-                <CardContent className="flex flex-col items-center justify-center py-12">
-                  <Calendar className="mb-4 h-12 w-12 text-muted-foreground" />
-                  <h3 className="mb-2 text-lg font-semibold">Aucun rendez-vous</h3>
-                  <p className="text-center text-muted-foreground">
-                    Les rendez-vous réservés apparaîtront ici
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-6">
-                {myAppointments.length > 0 && (
-                  <div>
-                    <h2 className="mb-4 text-base sm:text-lg font-semibold text-primary">Mes rendez-vous</h2>
-                    <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                      {myAppointments.map(renderAppointmentCard)}
-                    </div>
-                  </div>
-                )}
-                {receivedAppointments.length > 0 && (
-                  <div>
-                    <h2 className="mb-4 text-base sm:text-lg font-semibold">Rendez-vous reçus</h2>
-                    <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                      {receivedAppointments.map(renderAppointmentCard)}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="my" className="space-y-4">
-            {myAppointments.length === 0 ? (
-              <Card>
-                <CardContent className="flex flex-col items-center justify-center py-12">
-                  <Calendar className="mb-4 h-12 w-12 text-muted-foreground" />
-                  <h3 className="mb-2 text-lg font-semibold">Aucun rendez-vous pris</h3>
-                  <p className="text-center text-muted-foreground">
-                    Les rendez-vous que vous prenez apparaîtront ici
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                {myAppointments.map(renderAppointmentCard)}
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="received" className="space-y-4">
-            {receivedAppointments.length === 0 ? (
-              <Card>
-                <CardContent className="flex flex-col items-center justify-center py-12">
-                  <Calendar className="mb-4 h-12 w-12 text-muted-foreground" />
-                  <h3 className="mb-2 text-base sm:text-lg font-semibold">Aucun rendez-vous reçu</h3>
-                  <p className="text-center text-sm text-muted-foreground">
-                    Les rendez-vous que d'autres personnes prennent avec vous apparaîtront ici
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                {receivedAppointments.map(renderAppointmentCard)}
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="pending" className="space-y-4">
-            {pendingAppointments.length === 0 ? (
-              <Card>
-                <CardContent className="flex flex-col items-center justify-center py-12">
-                  <p className="text-sm text-muted-foreground">Aucun rendez-vous en attente</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                {pendingAppointments.map(renderAppointmentCard)}
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="upcoming" className="space-y-4">
-            {upcomingAppointments.length === 0 ? (
-              <Card>
-                <CardContent className="flex flex-col items-center justify-center py-12">
-                  <p className="text-sm text-muted-foreground">Aucun rendez-vous à venir</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                {upcomingAppointments.map(renderAppointmentCard)}
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="past" className="space-y-4">
-            {pastAppointments.length === 0 ? (
-              <Card>
-                <CardContent className="flex flex-col items-center justify-center py-12">
-                  <p className="text-sm text-muted-foreground">Aucun rendez-vous passé</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                {pastAppointments.map(renderAppointmentCard)}
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
+        )}
       </div>
+
+      <Dialog open={!!toDelete} onOpenChange={(open) => !open && setToDelete(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Supprimer ce rendez-vous ?</DialogTitle>
+            <DialogDescription>
+              {toDelete && `${toDelete.clientName}, ${formatDateTime(toDelete.startTime)}. `}
+              Il disparaît de votre agenda et de l&apos;historique. Pour prévenir le client, annulez-le plutôt.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setToDelete(null)}>
+              Garder
+            </Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={busyId === toDelete?.id}>
+              Supprimer définitivement
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
+  );
+}
+
+export default function AppointmentsPage() {
+  return (
+    <Suspense
+      fallback={
+        <MainLayout>
+          <PageSkeleton rows={4} />
+        </MainLayout>
+      }
+    >
+      <AppointmentsContent />
+    </Suspense>
   );
 }
