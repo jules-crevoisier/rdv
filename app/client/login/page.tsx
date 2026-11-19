@@ -17,14 +17,6 @@ const ClientLoginContent = () => {
     <AuthShell
       title="Connexion client"
       description="Retrouvez vos rendez-vous passés et à venir."
-      footer={
-        <>
-          Pas encore de compte ?{" "}
-          <Link href="/client/register" className="font-medium text-foreground underline-offset-4 hover:underline">
-            Créer un compte
-          </Link>
-        </>
-      }
     >
       <LoginForm
         type="client"
@@ -32,6 +24,12 @@ const ClientLoginContent = () => {
         defaultEmail={params.get("email") ?? undefined}
         notice={authNotice(params) ?? (params.get("registered") ? "Compte créé. Vous pouvez vous connecter." : null)}
       />
+      <p className="mt-6 text-center text-sm text-muted-foreground">
+        Pas encore de compte ?{" "}
+          <Link href="/client/register" className="font-medium text-foreground underline-offset-4 hover:underline">
+            Créer un compte
+          </Link>
+      </p>
     </AuthShell>
   );
 };

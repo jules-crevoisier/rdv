@@ -29,11 +29,6 @@ export default async function ResetPasswordPage({
       <AuthShell
         title="Lien inutilisable"
         description={messages[check.reason]}
-        footer={
-          <Link href={accountType === "client" ? "/client/login" : "/login"} className="font-medium text-foreground underline-offset-4 hover:underline">
-            Retour à la connexion
-          </Link>
-        }
       >
         <Link
           href={forgotHref}
@@ -41,6 +36,11 @@ export default async function ResetPasswordPage({
         >
           Demander un nouveau lien
         </Link>
+        <p className="mt-6 text-center text-sm text-muted-foreground">
+          <Link href={accountType === "client" ? "/client/login" : "/login"} className="font-medium text-foreground underline-offset-4 hover:underline">
+            Retour à la connexion
+          </Link>
+        </p>
       </AuthShell>
     );
   }

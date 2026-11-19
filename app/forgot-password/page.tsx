@@ -16,16 +16,16 @@ export default async function ForgotPasswordPage({
     <AuthShell
       title="Mot de passe oublié"
       description="Indiquez votre email, on vous envoie un lien pour en choisir un nouveau."
-      footer={
+    >
+      <ForgotPasswordForm type={accountType} defaultEmail={email} />
+      <p className="mt-6 text-center text-sm text-muted-foreground">
         <Link
           href={accountType === "client" ? "/client/login" : "/login"}
           className="font-medium text-foreground underline-offset-4 hover:underline"
         >
           Retour à la connexion
         </Link>
-      }
-    >
-      <ForgotPasswordForm type={accountType} defaultEmail={email} />
+      </p>
     </AuthShell>
   );
 }

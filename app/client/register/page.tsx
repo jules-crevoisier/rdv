@@ -7,16 +7,14 @@ export default function ClientRegisterPage() {
     <AuthShell
       title="Créer un compte client"
       description="Un compte pour retrouver tous vos rendez-vous et recevoir les confirmations par email."
-      footer={
-        <>
-          Déjà un compte ?{" "}
+    >
+      <RegisterForm type="client" redirectTo="/client/appointments" />
+      <p className="mt-6 text-center text-sm text-muted-foreground">
+        Déjà un compte ?{" "}
           <Link href="/client/login" className="font-medium text-foreground underline-offset-4 hover:underline">
             Se connecter
           </Link>
-        </>
-      }
-    >
-      <RegisterForm type="client" redirectTo="/client/appointments" />
+      </p>
     </AuthShell>
   );
 }
