@@ -1,31 +1,20 @@
 import { NextResponse } from "next/server";
 
-export async function GET() {
-  const health = {
-    status: "ok",
-    timestamp: new Date().toISOString(),
-    environment: {
-      hasDatabasePrismaUrl: !!process.env.DATABASE_PRISMA_DATABASE_URL,
-      hasDatabasePostgresUrl: !!process.env.DATABASE_POSTGRES_URL,
-      hasDatabaseUrl: !!process.env.DATABASE_URL,
-      hasAuthSecret: !!process.env.AUTH_SECRET,
-      nodeEnv: process.env.NODE_ENV,
-    },
-  };
+export const dynamic = "force-dynamic";
 
-  // Tester la connexion Prisma si possible
-  try {
-    const { prisma } = await import("@/lib/prisma");
-    await prisma.$connect();
-    health.status = "ok";
-    (health as any).database = "connected";
-  } catch (error: any) {
-    health.status = "error";
-    (health as any).database = "disconnected";
-    (health as any).error = error.message;
+// GET /api/health        -> liveness (utilisé par le HEALTHCHECK Docker, ne touche pas la base)
+// GET /api/health?db=1   -> readiness (vérifie aussi la connexion PostgreSQL)
+export async function GET(request: Request) {
+  const checkDb = new URL(request.url).searchParams.has("db");
+  if (!checkDb) {
+    return NextResponse.json({ status: "ok" });
   }
 
-  return NextResponse.json(health, {
-    status: health.status === "ok" ? 200 : 500,
-  });
+  try {
+    const { prisma } = await import("@/lib/prisma");
+    await prisma.$queryRaw`SELECT 1`;
+    return NextResponse.json({ status: "ok", database: "connected" });
+  } catch {
+    return NextResponse.json({ status: "error", database: "disconnected" }, { status: 503 });
+  }
 }

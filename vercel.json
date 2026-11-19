@@ -1,9 +1,4 @@
 {
   "buildCommand": "npm run vercel-build",
-  "installCommand": "npm install",
-  "functions": {
-    "middleware.ts": {
-      "maxDuration": 10
-    }
-  }
+  "installCommand": "npm install"
 }

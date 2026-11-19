@@ -1,0 +1,24 @@
+# Tout ce qui n'est pas nécessaire au build
+.git
+.github
+.next
+node_modules
+npm-debug.log*
+.env*
+!.env.example
+*.db
+*.db-journal
+.vercel
+vercel.json
+coverage
+README.md
+DEPLOY.md
+Dockerfile
+docker-compose*.yml
+.dockerignore
+# Skills Claude (tasteskill ~40 Mo) : inutiles en prod
+.claude
+.agents
+skills-lock.json
+.taste
+.taste-skill
