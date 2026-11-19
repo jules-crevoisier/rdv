@@ -11,7 +11,7 @@
 ## Dokploy (recommandé : type « Docker Compose »)
 
 1. Créer une base **PostgreSQL** dans Dokploy (ou utiliser une base existante) et copier son URL interne.
-2. Créer un service **Compose** → source GitHub `jules-crevoisier/rdv`, branche `main`, fichier `docker-compose.yml`.
+2. Créer un service **Compose** → source GitHub `jules-crevoisier/rdv`, branche `master`, fichier `docker-compose.yml`.
 3. Onglet **Environment** :
    ```
    DATABASE_URL=postgresql://user:password@<host-interne>:5432/rdv
@@ -19,7 +19,7 @@
    AUTH_URL=https://ton-domaine.fr
    ```
 4. Onglet **Domains** : ajouter le domaine sur le service `app`, port `3000` (HTTPS via Let's Encrypt).
-5. Activer **Autodeploy** (webhook GitHub) : chaque push sur `main` rebuild, migre puis redémarre.
+5. Activer **Autodeploy** (webhook GitHub) : chaque push sur `master` rebuild, migre puis redémarre.
 
 ### Variante type « Application » (Dockerfile seul)
 
