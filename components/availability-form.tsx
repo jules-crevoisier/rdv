@@ -356,9 +356,9 @@ export const AvailabilityForm = ({ dateOverrides = [], onChange }: AvailabilityF
       <CardContent>
         <div className="space-y-4">
           {/* Règles de disponibilité automatiques */}
-          <div className="rounded-2xl border bg-card p-5">
+          <div className="rounded-xl border bg-card p-5">
             <div className="flex items-center justify-between mb-3">
-              <Label className="font-display text-lg font-normal tracking-[-0.02em]">Horaires récurrents</Label>
+              <Label className="text-base font-semibold">Horaires récurrents</Label>
               <Button
                 type="button"
                 variant="outline"
@@ -385,7 +385,7 @@ export const AvailabilityForm = ({ dateOverrides = [], onChange }: AvailabilityF
                         variant={newRule.daysOfWeek.includes(day.value) ? "default" : "outline"}
                         size="sm"
                         onClick={() => handleToggleDay(day.value)}
-                        className="font-mono tnum"
+                        className="tnum"
                       >
                         {day.label}
                       </Button>
@@ -400,7 +400,7 @@ export const AvailabilityForm = ({ dateOverrides = [], onChange }: AvailabilityF
                       type="time"
                       value={newRule.startTime}
                       onChange={(e) => setNewRule({ ...newRule, startTime: e.target.value })}
-                      className="font-mono tnum"
+                      className="tnum"
                     />
                   </div>
                   <div>
@@ -409,7 +409,7 @@ export const AvailabilityForm = ({ dateOverrides = [], onChange }: AvailabilityF
                       type="time"
                       value={newRule.endTime}
                       onChange={(e) => setNewRule({ ...newRule, endTime: e.target.value })}
-                      className="font-mono tnum"
+                      className="tnum"
                     />
                   </div>
                 </div>
@@ -422,7 +422,7 @@ export const AvailabilityForm = ({ dateOverrides = [], onChange }: AvailabilityF
                       value={newRule.startDate}
                       onChange={(e) => setNewRule({ ...newRule, startDate: e.target.value })}
                       min={format(new Date(), "yyyy-MM-dd")}
-                      className="font-mono tnum"
+                      className="tnum"
                     />
                   </div>
                   <div>
@@ -432,7 +432,7 @@ export const AvailabilityForm = ({ dateOverrides = [], onChange }: AvailabilityF
                       value={newRule.endDate}
                       onChange={(e) => setNewRule({ ...newRule, endDate: e.target.value })}
                       min={newRule.startDate}
-                      className="font-mono tnum"
+                      className="tnum"
                     />
                   </div>
                 </div>
@@ -498,8 +498,8 @@ export const AvailabilityForm = ({ dateOverrides = [], onChange }: AvailabilityF
           </div>
 
           {/* Templates d'horaires réutilisables - toujours visibles */}
-          <div className="rounded-2xl border bg-card p-5">
-            <Label className="font-display text-lg font-normal tracking-[-0.02em] mb-2 block">Plages types</Label>
+          <div className="rounded-xl border bg-card p-5">
+            <Label className="text-base font-semibold mb-2 block">Plages types</Label>
             <p className="text-xs text-muted-foreground mb-3">
               Sélectionnez des dates puis cliquez sur un template pour appliquer automatiquement les horaires
             </p>
@@ -535,14 +535,14 @@ export const AvailabilityForm = ({ dateOverrides = [], onChange }: AvailabilityF
           <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
             <div className="space-y-4">
               <div>
-                <Label className="font-display text-lg font-normal tracking-[-0.02em] mb-2 block">Jours ouverts</Label>
+                <Label className="text-base font-semibold mb-2 block">Jours ouverts</Label>
                 <Calendar
                   mode="multiple"
                   selected={selectedDates}
                   onSelect={(dates) => setSelectedDates(dates || [])}
                   locale={fr}
                   weekStartsOn={1}
-                  className="rounded-2xl border bg-card p-3"
+                  className="rounded-xl border bg-card p-3"
                   disabled={(date) => {
                     // Désactiver les dates passées
                     const today = new Date();
@@ -561,7 +561,7 @@ export const AvailabilityForm = ({ dateOverrides = [], onChange }: AvailabilityF
                 Ajouter {selectedDates.length > 0 ? `${selectedDates.length} date${selectedDates.length > 1 ? "s" : ""}` : "des dates"}
               </Button>
               {dateOverrides.length > 0 && (
-                <div className="rounded-2xl bg-secondary p-4">
+                <div className="rounded-xl bg-secondary p-4">
                   <p className="text-sm font-medium mb-2">Aperçu ({dateOverrides.length})</p>
                   <div className="flex flex-wrap gap-2">
                     {dateOverrides
@@ -584,9 +584,9 @@ export const AvailabilityForm = ({ dateOverrides = [], onChange }: AvailabilityF
             </div>
 
             <div className="space-y-4">
-              <Label className="font-display text-lg font-normal tracking-[-0.02em] mb-2 block">Plages par jour</Label>
+              <Label className="text-base font-semibold mb-2 block">Plages par jour</Label>
               {dateOverrides.length === 0 ? (
-                <div className="rounded-2xl border-[1.5px] border-dashed border-input p-8 text-center text-sm text-muted-foreground">
+                <div className="rounded-xl border-dashed p-8 text-center text-sm text-muted-foreground">
                   <CalendarIcon className="mx-auto h-8 w-8 mb-2 opacity-50" />
                   <p>Aucune date configurée</p>
                   <p className="text-xs mt-1">Sélectionnez des dates dans le calendrier pour les configurer</p>
@@ -671,7 +671,7 @@ export const AvailabilityForm = ({ dateOverrides = [], onChange }: AvailabilityF
                                               e.target.value
                                             )
                                           }
-                                          className="h-9 w-28 font-mono text-sm tnum"
+                                          className="h-9 w-28 text-sm tnum"
                                         />
                                         <span className="text-xs text-muted-foreground">-</span>
                                         <Input
@@ -685,7 +685,7 @@ export const AvailabilityForm = ({ dateOverrides = [], onChange }: AvailabilityF
                                               e.target.value
                                             )
                                           }
-                                          className="h-9 w-28 font-mono text-sm tnum"
+                                          className="h-9 w-28 text-sm tnum"
                                         />
                                       </div>
                                       <Button

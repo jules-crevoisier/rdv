@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 
 /* Squelettes de chargement : la forme de la page, sans texte « Chargement... ». */
 export const Skeleton = ({ className }: { className?: string }) => (
-  <div className={cn("animate-pulse rounded-xl bg-secondary", className)} aria-hidden="true" />
+  <div className={cn("animate-pulse rounded-lg bg-muted", className)} aria-hidden="true" />
 );
 
 export const PageSkeleton = ({ rows = 3 }: { rows?: number }) => (

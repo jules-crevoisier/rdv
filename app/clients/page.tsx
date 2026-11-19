@@ -215,7 +215,7 @@ export default function ClientsPage() {
             description="Les personnes qui réservent sans compte restent dans vos réservations. Ajoutez ici celles qui reviennent souvent."
           />
         ) : (
-          <div className="space-y-4 enter-2">
+          <div className="space-y-4">
             <div className="relative max-w-sm">
               <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -228,10 +228,10 @@ export default function ClientsPage() {
               />
             </div>
 
-            <ul className="divide-y overflow-hidden rounded-2xl border bg-card">
+            <ul className="divide-y overflow-hidden rounded-xl border bg-card">
               {filtered.map((client) => (
                 <li key={client.id} className="flex items-center gap-4 px-4 py-3.5 sm:px-5">
-                  <span className="grid size-10 shrink-0 place-items-center rounded-full bg-secondary font-mono text-xs" aria-hidden="true">
+                  <span className="grid size-10 shrink-0 place-items-center rounded-full bg-muted text-xs font-medium" aria-hidden="true">
                     {initials(client)}
                   </span>
                   <div className="min-w-0 flex-1">
@@ -250,7 +250,7 @@ export default function ClientsPage() {
                     </div>
                   </div>
                   <div className="hidden text-right sm:block">
-                    <p className="font-mono text-sm tnum">{client._count.appointments}</p>
+                    <p className="text-sm font-medium tnum">{client._count.appointments}</p>
                     <p className="text-xs text-muted-foreground">rendez-vous</p>
                   </div>
                   <p className="hidden w-28 text-right text-xs text-muted-foreground lg:block">

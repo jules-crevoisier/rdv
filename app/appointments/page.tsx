@@ -200,13 +200,13 @@ function AppointmentsContent() {
           description="Validez les demandes, retrouvez les coordonnées, gardez l'historique."
         />
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between enter-2">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Tabs value={filter} onValueChange={changeFilter}>
             <TabsList className="w-full sm:w-fit">
               {FILTERS.map((f) => (
                 <TabsTrigger key={f} value={f} className="gap-1.5">
                   {labels[f]}
-                  <span className="font-mono text-[0.6875rem] opacity-70 tnum">{lists[f].length}</span>
+                  <span className="text-xs opacity-60 tnum">{lists[f].length}</span>
                 </TabsTrigger>
               ))}
             </TabsList>
@@ -240,12 +240,12 @@ function AppointmentsContent() {
         {groups.length === 0 ? (
           <EmptyState {...empty[filter]} />
         ) : (
-          <div className="space-y-8 enter-3">
+          <div className="space-y-8">
             {groups.map(([key, items]) => (
               <section key={key} aria-label={dayLabel(new Date(key))}>
                 <h2 className="mb-3 flex items-baseline gap-3 text-lg first-letter:uppercase">
                   {dayLabel(new Date(key))}
-                  <span className="font-mono text-xs text-muted-foreground tnum">{items.length}</span>
+                  <span className="text-xs text-muted-foreground tnum">{items.length}</span>
                 </h2>
                 <ol className="space-y-3">
                   {items.map((apt) => {

@@ -10,7 +10,7 @@ export const APPOINTMENT_STATUS: Record<string, { label: string; className: stri
 export const StatusPill = ({ status, className }: { status: string; className?: string }) => {
   const s = APPOINTMENT_STATUS[status] ?? { label: status, className: "bg-secondary text-muted-foreground", dot: "bg-muted-foreground" };
   return (
-    <span className={cn("inline-flex h-6 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium", s.className, className)}>
+    <span className={cn("inline-flex h-5 shrink-0 items-center gap-1.5 rounded-full px-2 text-xs font-medium", s.className, className)}>
       <span className={cn("size-1.5 rounded-full", s.dot)} aria-hidden="true" />
       {s.label}
     </span>

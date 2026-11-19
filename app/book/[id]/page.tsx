@@ -35,16 +35,16 @@ const toKey = (d: Date) =>
 
 const PoweredBy = () => (
   <Link href="/login" className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground">
-    <BrandMark className="h-3.5 w-5 text-muted-foreground" />
+    <BrandMark className="size-5 [&_svg]:size-3" />
     Réservation gérée avec Reservy
   </Link>
 );
 
 const Unavailable = ({ title, message, name }: { title: string; message: string; name?: string }) => (
-  <div className="flex min-h-dvh flex-col items-center justify-center gap-10 px-4 py-12">
-    <div className="w-full max-w-md rounded-3xl border bg-card p-8 text-center enter">
-      {name && <p className="eyebrow mb-3">{name}</p>}
-      <h1 className="text-3xl leading-tight">{title}</h1>
+  <div className="flex min-h-dvh flex-col items-center justify-center gap-10 bg-muted/40 px-4 py-12">
+    <div className="w-full max-w-md rounded-xl border bg-card p-8 text-center shadow-sm">
+      {name && <p className="mb-2 text-sm text-muted-foreground">{name}</p>}
+      <h1 className="text-2xl">{title}</h1>
       <p className="mt-3 text-muted-foreground">{message}</p>
     </div>
     <PoweredBy />
@@ -224,16 +224,16 @@ export default function BookPage() {
   const isVideo = eventType.meetingType === "video";
 
   return (
-    <div className="flex min-h-dvh flex-col items-center px-3 py-4 sm:px-6 sm:py-10 lg:justify-center">
-      <div className="w-full max-w-5xl overflow-hidden rounded-3xl border bg-card enter lg:grid lg:grid-cols-[19rem_minmax(0,1fr)]">
+    <div className="flex min-h-dvh flex-col items-center bg-muted/40 px-3 py-4 sm:px-6 sm:py-10 lg:justify-center">
+      <div className="w-full max-w-5xl overflow-hidden rounded-xl border bg-card shadow-sm lg:grid lg:grid-cols-[18rem_minmax(0,1fr)]">
         {/* Le rendez-vous */}
         <aside className="border-b p-6 sm:p-8 lg:border-b-0 lg:border-r">
           <div className="flex items-center gap-2">
             <span className="size-2.5 rounded-full" style={{ backgroundColor: eventType.color || "var(--primary)" }} aria-hidden="true" />
-            <p className="eyebrow">Prendre rendez-vous</p>
+            <p className="text-sm text-muted-foreground">Prendre rendez-vous</p>
           </div>
-          <h1 className="mt-3 text-[2rem] leading-[1.05] sm:text-[2.25rem]">{eventType.name}</h1>
-          {eventType.description && <p className="mt-3 text-[0.9375rem] leading-relaxed text-muted-foreground">{eventType.description}</p>}
+          <h1 className="mt-2 text-2xl">{eventType.name}</h1>
+          {eventType.description && <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{eventType.description}</p>}
 
           <ul className="mt-6 space-y-3 text-sm">
             <li className="flex items-center gap-3">
@@ -253,11 +253,11 @@ export default function BookPage() {
           </ul>
 
           {selectedTimeSlot && step === "details" && (
-            <div className="mt-8 space-y-2 enter">
-              <p className="eyebrow">Votre créneau</p>
+            <div className="mt-8 space-y-2">
+              <p className="text-sm font-medium">Votre créneau</p>
               <Ticket start={selectedTimeSlot} end={addMinutes(new Date(selectedTimeSlot), eventType.duration)}>
                 <p className="text-sm font-medium first-letter:uppercase">{formatDate(selectedTimeSlot)}</p>
-                <button type="button" onClick={() => setStep("pick")} className="mt-0.5 text-xs text-primary underline-offset-4 hover:underline">
+                <button type="button" onClick={() => setStep("pick")} className="mt-0.5 text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground">
                   Changer de créneau
                 </button>
               </Ticket>
@@ -268,10 +268,10 @@ export default function BookPage() {
         {/* Étape 1 : jour et heure */}
         {step === "pick" && (
           <section className="p-4 sm:p-8" aria-labelledby="pick-title">
-            <h2 id="pick-title" className="text-2xl">Choisissez un jour et une heure</h2>
+            <h2 id="pick-title" className="text-lg">Choisissez un jour et une heure</h2>
 
             {availableDates !== null && availableDates.length === 0 ? (
-              <p className="mt-6 rounded-2xl bg-secondary p-5 text-sm text-muted-foreground">
+              <p className="mt-6 rounded-lg bg-muted p-5 text-sm text-muted-foreground">
                 Aucun créneau n&apos;est ouvert pour l&apos;instant. Revenez bientôt ou contactez l&apos;organisateur.
               </p>
             ) : (
@@ -304,16 +304,16 @@ export default function BookPage() {
                       {slotsLoading ? (
                         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-2 xl:grid-cols-3" aria-hidden="true">
                           {Array.from({ length: 6 }).map((_, i) => (
-                            <div key={i} className="h-11 animate-pulse rounded-lg bg-secondary" />
+                            <div key={i} className="h-10 animate-pulse rounded-md bg-muted" />
                           ))}
                         </div>
                       ) : availableSlots.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">Plus de créneau libre ce jour-là. Essayez un autre jour en bleu.</p>
+                        <p className="text-sm text-muted-foreground">Plus de créneau libre ce jour-là. Essayez un autre jour en gras.</p>
                       ) : (
                         <div className="space-y-5">
                           {groupedSlots.map((group) => (
                             <fieldset key={group.label}>
-                              <legend className="eyebrow mb-2">{group.label}</legend>
+                              <legend className="mb-2 text-xs font-medium text-muted-foreground">{group.label}</legend>
                               <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-2 xl:grid-cols-3">
                                 {group.slots.map((slot) => {
                                   const isSelected = selectedTimeSlot === slot;
@@ -324,10 +324,10 @@ export default function BookPage() {
                                       onClick={() => setSelectedTimeSlot(slot)}
                                       aria-pressed={isSelected}
                                       className={cn(
-                                        "h-11 rounded-lg border font-mono text-sm tnum outline-none transition-[transform,background-color,border-color,color] duration-150 focus-visible:ring-[3px] focus-visible:ring-ring/40 active:scale-[.97]",
+                                        "h-10 rounded-md border text-sm font-medium tnum outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50 active:scale-[.98]",
                                         isSelected
-                                          ? "border-ink bg-ink text-ink-foreground"
-                                          : "border-input bg-card hover:border-primary hover:text-primary"
+                                          ? "border-primary bg-primary text-primary-foreground"
+                                          : "bg-background shadow-xs hover:border-foreground/40"
                                       )}
                                     >
                                       {formatTime(slot)}
@@ -341,7 +341,7 @@ export default function BookPage() {
                       )}
                     </>
                   ) : (
-                    <p className="text-sm text-muted-foreground">Choisissez un jour en bleu dans le calendrier.</p>
+                    <p className="text-sm text-muted-foreground">Choisissez un jour en gras dans le calendrier.</p>
                   )}
                 </div>
               </div>
@@ -352,14 +352,14 @@ export default function BookPage() {
               <p className="min-w-0 truncate text-sm text-muted-foreground">
                 {selectedTimeSlot ? (
                   <>
-                    <span className="font-mono text-foreground tnum">{formatTime(selectedTimeSlot)}</span>
+                    <span className="font-medium text-foreground tnum">{formatTime(selectedTimeSlot)}</span>
                     <span className="hidden sm:inline">, {formatDate(selectedTimeSlot)}</span>
                   </>
                 ) : (
                   "Aucun créneau choisi"
                 )}
               </p>
-              <Button size="lg" disabled={!selectedTimeSlot} onClick={() => setStep("details")}>
+              <Button disabled={!selectedTimeSlot} onClick={() => setStep("details")}>
                 Continuer
                 <ArrowRight />
               </Button>
@@ -378,7 +378,7 @@ export default function BookPage() {
               <ArrowLeft className="size-4" />
               Retour au calendrier
             </button>
-            <h2 id="details-title" className="text-2xl">Vos coordonnées</h2>
+            <h2 id="details-title" className="text-lg">Vos coordonnées</h2>
             <p className="mt-1 text-sm text-muted-foreground">La confirmation part à cette adresse e-mail.</p>
 
             <form onSubmit={handleSubmit} className="mt-6 grid max-w-xl gap-5 sm:grid-cols-2">
@@ -435,7 +435,7 @@ export default function BookPage() {
               )}
 
               <div className="sm:col-span-2">
-                <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={isSubmitting}>
+                <Button type="submit" className="w-full sm:w-auto" disabled={isSubmitting}>
                   {isSubmitting
                     ? "Envoi en cours…"
                     : eventType.requiresApproval

@@ -240,8 +240,8 @@ export default function EventTypesPage() {
 
   const STATUS = {
     online: { label: "En ligne", hint: "Visible et réservable par lien", icon: Globe, className: "bg-success/12 text-success" },
-    private: { label: "Privé", hint: "Réservable seulement avec le lien", icon: Lock, className: "bg-accent text-accent-foreground" },
-    archived: { label: "Archivé", hint: "Masqué, lien désactivé", icon: Archive, className: "bg-secondary text-muted-foreground" },
+    private: { label: "Privé", hint: "Réservable seulement avec le lien", icon: Lock, className: "bg-blue-500/10 text-blue-600 dark:text-blue-400" },
+    archived: { label: "Archivé", hint: "Masqué, lien désactivé", icon: Archive, className: "bg-muted text-muted-foreground" },
     closed: { label: "Fermé", hint: "Lien actif, réservations suspendues", icon: XCircle, className: "bg-destructive/10 text-destructive" },
   } as const;
 
@@ -298,7 +298,7 @@ export default function EventTypesPage() {
             }
           />
         ) : (
-          <ul className="grid gap-4 md:grid-cols-2 enter-2">
+          <ul className="grid gap-4 md:grid-cols-2">
             {eventTypes.map((eventType) => {
               const status = STATUS[eventType.status as keyof typeof STATUS] ?? STATUS.archived;
               const StatusIcon = status.icon;
@@ -306,17 +306,17 @@ export default function EventTypesPage() {
               const upcomingDates = getUpcomingAppointmentDates(eventType.id);
               const linkOn = isLinkAccessible(eventType.status);
               return (
-                <li key={eventType.id} className="relative flex flex-col overflow-hidden rounded-2xl border bg-card">
-                  <span className="absolute inset-y-0 left-0 w-1" style={{ backgroundColor: eventType.color }} aria-hidden="true" />
-                  <div className="flex flex-1 flex-col gap-4 p-5 pl-6">
+                <li key={eventType.id} className="flex flex-col rounded-xl border bg-card shadow-xs">
+                  <div className="flex flex-1 flex-col gap-4 p-5">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <h2 className="text-xl leading-tight">
-                          <Link href={`/event-types/${eventType.id}/edit`} className="outline-none hover:underline underline-offset-4 decoration-1 focus-visible:underline">
+                        <h2 className="flex items-center gap-2 text-base">
+                          <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: eventType.color }} aria-hidden="true" />
+                          <Link href={`/event-types/${eventType.id}/edit`} className="truncate outline-none hover:underline underline-offset-4 focus-visible:underline">
                             {eventType.name}
                           </Link>
                         </h2>
-                        <p className="mt-1 font-mono text-xs text-muted-foreground tnum">
+                        <p className="mt-1 text-xs text-muted-foreground tnum">
                           {eventType.duration} min
                           {eventType.bufferTime > 0 && ` · ${eventType.bufferTime} min de pause`}
                           {eventType.requiresApproval && " · à valider"}
@@ -325,7 +325,7 @@ export default function EventTypesPage() {
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <button
-                            className={cn("inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3 text-xs font-medium outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40", status.className)}
+                            className={cn("inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50", status.className)}
                             aria-label={`Statut : ${status.label}. Changer le statut`}
                           >
                             <StatusIcon className="size-3.5" />
@@ -357,7 +357,7 @@ export default function EventTypesPage() {
                     <div className="space-y-1.5 text-sm">
                       <p className="flex items-start gap-2">
                         <CalendarClock className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-                        {hours ? <span className="font-mono text-xs leading-5 tnum">{hours}</span> : <span className="text-muted-foreground">Aucun horaire défini</span>}
+                        {hours ? <span className="text-xs leading-5 tnum">{hours}</span> : <span className="text-muted-foreground">Aucun horaire défini</span>}
                       </p>
                       {upcomingDates.length > 0 && (
                         <p className="pl-6 text-xs text-muted-foreground">Prochains : {upcomingDates.join(", ")}</p>
@@ -365,8 +365,8 @@ export default function EventTypesPage() {
                     </div>
 
                     {/* Lien de réservation, copiable en un clic */}
-                    <div className={cn("mt-auto flex items-center gap-2 rounded-xl bg-secondary p-1.5 pl-3", !linkOn && "opacity-60")}>
-                      <span className="min-w-0 flex-1 truncate font-mono text-xs text-muted-foreground">
+                    <div className={cn("mt-auto flex items-center gap-2 rounded-md border bg-muted/50 p-1 pl-3", !linkOn && "opacity-60")}>
+                      <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
                         {linkOn ? getBookingLink(eventType.id).replace(/^https?:\/\//, "") : "Lien désactivé (statut " + status.label.toLowerCase() + ")"}
                       </span>
                       {linkOn && (
@@ -382,7 +382,7 @@ export default function EventTypesPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 border-t px-5 py-3 pl-6">
+                  <div className="flex items-center gap-2 border-t px-5 py-3">
                     <Button asChild variant="outline" size="sm" className="flex-1">
                       <Link href={`/event-types/${eventType.id}/edit`}>
                         <Pencil />

@@ -49,10 +49,10 @@ const UserMenu = ({ align = "start" }: { align?: "start" | "end" }) => {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
-          className="flex min-h-11 w-full items-center gap-3 rounded-xl px-2 text-left outline-none transition-colors hover:bg-secondary focus-visible:ring-[3px] focus-visible:ring-ring/40"
+          className="flex min-h-10 w-full items-center gap-2.5 rounded-md px-2 text-left outline-none transition-colors hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50"
           aria-label="Menu du compte"
         >
-          <span className="grid size-8 shrink-0 place-items-center rounded-full bg-ink font-mono text-xs text-ink-foreground">
+          <span className="grid size-8 shrink-0 place-items-center rounded-full bg-muted text-xs font-medium">
             {initials(session.user.name, session.user.email)}
           </span>
           <span className="hidden min-w-0 flex-1 lg:block">
@@ -81,17 +81,17 @@ export const Sidebar = () => {
   const pathname = usePathname();
 
   return (
-    <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r bg-background px-4 py-5 lg:flex">
+    <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r bg-sidebar px-3 py-4 lg:flex">
       <Brand className="px-2" />
 
-      <Button asChild className="mt-8 w-full justify-start">
+      <Button asChild className="mt-6 w-full">
         <Link href="/event-types/new">
           <Plus />
           Nouveau type
         </Link>
       </Button>
 
-      <nav className="mt-6 flex flex-col gap-0.5" aria-label="Navigation principale">
+      <nav className="mt-4 flex flex-col gap-0.5" aria-label="Navigation principale">
         {navigation.map((item) => {
           const Icon = item.icon;
           const active = isActivePath(pathname, item.href);
@@ -101,19 +101,18 @@ export const Sidebar = () => {
               href={item.href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "group relative flex h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/40",
-                active ? "bg-card text-foreground shadow-[0_0_0_1px_var(--border)]" : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                "flex h-9 items-center gap-2.5 rounded-md px-2.5 text-sm outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50",
+                active ? "bg-accent font-medium text-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground"
               )}
             >
-              {active && <span className="absolute inset-y-2.5 -left-4 w-[3px] rounded-r-full bg-primary" aria-hidden="true" />}
-              <Icon className={cn("size-[1.125rem]", active && "text-primary")} />
+              <Icon className="size-4" />
               {item.name}
             </Link>
           );
         })}
       </nav>
 
-      <div className="mt-auto flex items-center gap-1 border-t pt-4">
+      <div className="mt-auto flex items-center gap-1 border-t pt-3">
         <div className="min-w-0 flex-1">
           <UserMenu />
         </div>
@@ -138,7 +137,7 @@ export const MobileNav = () => {
               <Plus />
             </Link>
           </Button>
-          <div className="w-11">
+          <div className="w-10">
             <UserMenu align="end" />
           </div>
         </div>
@@ -157,12 +156,11 @@ export const MobileNav = () => {
               href={item.href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "relative flex h-16 flex-col items-center justify-center gap-1 text-[0.6875rem] font-medium outline-none focus-visible:bg-secondary",
+                "flex h-16 flex-col items-center justify-center gap-1 text-[0.6875rem] font-medium outline-none focus-visible:bg-accent",
                 active ? "text-foreground" : "text-muted-foreground"
               )}
             >
-              {active && <span className="absolute inset-x-6 top-0 h-[2px] rounded-b-full bg-primary" aria-hidden="true" />}
-              <Icon className={cn("size-5", active && "text-primary")} />
+                            <Icon className="size-5" />
               {item.short}
             </Link>
           );

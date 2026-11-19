@@ -146,7 +146,7 @@ function ClientAppointmentsContent() {
         ) : (
           <>
             {upcoming.length > 0 && (
-              <section aria-labelledby="up-title" className="enter-2">
+              <section aria-labelledby="up-title" className="">
                 <h2 id="up-title" className="mb-4 text-xl">À venir</h2>
                 {renderList(upcoming)}
               </section>

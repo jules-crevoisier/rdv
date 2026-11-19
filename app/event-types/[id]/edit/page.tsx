@@ -190,7 +190,7 @@ export default function EditEventTypePage() {
                       type="number"
                       value={formData.duration}
                       readOnly
-                      className="text-center font-mono tnum"
+                      className="text-center tnum"
                       min="15"
                       step="5"
                     />
@@ -238,7 +238,7 @@ export default function EditEventTypePage() {
                       type="number"
                       value={formData.bufferTime}
                       readOnly
-                      className="text-center font-mono tnum"
+                      className="text-center tnum"
                       min="0"
                       step="5"
                     />

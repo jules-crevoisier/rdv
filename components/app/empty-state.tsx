@@ -1,3 +1,4 @@
+import { CalendarX2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type EmptyStateProps = {
@@ -7,20 +8,13 @@ type EmptyStateProps = {
   className?: string;
 };
 
-/* État vide : un billet en pointillés, vierge, à remplir. */
 export const EmptyState = ({ title, description, action, className }: EmptyStateProps) => (
-  <div
-    className={cn(
-      "flex flex-col items-center justify-center gap-4 rounded-2xl border-[1.5px] border-dashed border-input px-6 py-14 text-center",
-      className
-    )}
-  >
-    <div className="grid h-12 w-[4.5rem] grid-cols-[1.25rem_1fr] overflow-hidden rounded-lg border-[1.5px] border-dashed border-input" aria-hidden="true">
-      <span className="border-r-[1.5px] border-dashed border-input" />
-      <span />
-    </div>
+  <div className={cn("flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed px-6 py-12 text-center", className)}>
+    <span className="grid size-10 place-items-center rounded-full bg-muted text-muted-foreground" aria-hidden="true">
+      <CalendarX2 className="size-5" />
+    </span>
     <div className="space-y-1">
-      <p className="font-display text-xl tracking-[-0.02em]">{title}</p>
+      <p className="font-medium">{title}</p>
       {description && <p className="mx-auto max-w-sm text-sm text-muted-foreground">{description}</p>}
     </div>
     {action}
