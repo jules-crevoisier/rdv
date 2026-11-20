@@ -18,7 +18,7 @@ export const sendTeamInvite = async (
     heading: `Vous co-organisez avec ${p.spaceName}`,
     paragraphs: [
       member.name ? `Bonjour ${member.name},` : "Bonjour,",
-      `${p.inviterName} vous a ajouté·e à l'équipe d'organisation de ${p.spaceName} sur ${APP_NAME}. Vous pouvez modifier les créneaux, gérer les réservations et placer les responsables, comme l'organisateur.`,
+      `${p.inviterName} vous a ajouté à l'équipe d'organisation de ${p.spaceName} sur ${APP_NAME}. Vous pouvez modifier les créneaux, gérer les réservations et placer les responsables, comme l'organisateur.`,
       hasAccount
         ? "Connectez-vous avec cette adresse : l'espace de l'équipe s'ouvre directement, ou depuis le menu de votre compte."
         : `Créez votre compte ${APP_NAME} avec cette adresse (ou continuez avec Google ou Discord) pour y accéder.`,
