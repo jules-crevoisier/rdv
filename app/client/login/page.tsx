@@ -1,115 +1,43 @@
 "use client";
 
-import { useState } from "react";
-import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { SessionProvider } from "next-auth/react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { AuthShell } from "@/components/auth/auth-shell";
-import { Calendar } from "lucide-react";
+import { LoginForm } from "@/components/auth/login-form";
+import { authNotice } from "@/lib/auth-notices";
 
-function ClientLoginContent() {
-  const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setIsLoading(true);
-
-    try {
-      // Utiliser signIn - le basePath est géré par le SessionProvider
-      const result = await signIn("ClientCredentials", {
-        email,
-        password,
-        redirect: false,
-        callbackUrl: "/client/appointments",
-      });
-
-      if (result?.error) {
-        setError("Email ou mot de passe incorrect");
-      } else if (result?.ok) {
-        router.push("/client/appointments");
-        router.refresh();
-      } else {
-        setError("Une erreur est survenue lors de la connexion");
-      }
-    } catch (error) {
-      console.error("Login error:", error);
-      setError("Une erreur est survenue");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+const ClientLoginContent = () => {
+  const params = useSearchParams();
+  const callbackUrl = params.get("callbackUrl");
+  // On n'accepte qu'un chemin interne pour éviter les redirections ouvertes
+  const redirectTo = callbackUrl?.startsWith("/") && !callbackUrl.startsWith("//") ? callbackUrl : "/client/appointments";
 
   return (
-    <AuthShell title="Retrouvez vos rendez-vous" description="Connectez-vous pour voir vos réservations à venir et passées." headline="Tous vos rendez-vous, au même endroit." lead="Heure, lieu, lien visio : chaque réservation est rangée ici dès qu'elle est prise.">
-        <Card>
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary">
-              <Calendar className="h-6 w-6 text-primary-foreground" />
-            </div>
-            <CardTitle className="text-2xl">Connexion client</CardTitle>
-            <CardDescription>Connectez-vous pour voir vos rendez-vous</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {error && (
-                <div role="alert" className="rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
-                  {error}
-                </div>
-              )}
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="votre@email.com"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Mot de passe</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Connexion..." : "Se connecter"}
-              </Button>
-            </form>
-            <div className="mt-6 text-center text-sm">
-              <p className="text-muted-foreground">
-                Pas encore de compte ?{" "}
-                <Link href="/client/register" className="font-medium text-foreground underline underline-offset-4">
-                  Créer un compte
-                </Link>
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+    <AuthShell
+      title="Connexion client"
+      description="Retrouvez vos rendez-vous passés et à venir."
+    >
+      <LoginForm
+        type="client"
+        redirectTo={redirectTo}
+        defaultEmail={params.get("email") ?? undefined}
+        notice={authNotice(params) ?? (params.get("registered") ? "Compte créé. Vous pouvez vous connecter." : null)}
+      />
+      <p className="mt-6 text-center text-sm text-muted-foreground">
+        Pas encore de compte ?{" "}
+          <Link href="/client/register" className="font-medium text-foreground underline-offset-4 hover:underline">
+            Créer un compte
+          </Link>
+      </p>
     </AuthShell>
   );
-}
+};
 
 export default function ClientLoginPage() {
   return (
-    <SessionProvider basePath="/api/auth/client">
+    <Suspense>
       <ClientLoginContent />
-    </SessionProvider>
+    </Suspense>
   );
 }

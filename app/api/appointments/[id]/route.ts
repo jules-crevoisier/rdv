@@ -1,6 +1,8 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { getAppointment, updateAppointment, deleteAppointment } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
+import { notifyAppointmentDeleted, notifyAppointmentUpdated } from "@/lib/email/appointment-emails";
 
 export async function GET(
   request: Request,
@@ -38,12 +40,21 @@ export async function PUT(
 
     const { id } = await params;
     const body = await request.json();
-    
-    await updateAppointment(id, session.user.id, {
+
+    const previous = await prisma.appointment.findFirst({
+      where: { id, userId: session.user.id },
+      select: { status: true, startTime: true },
+    });
+
+    const result = await updateAppointment(id, session.user.id, {
       status: body.status,
       startTime: body.startTime ? new Date(body.startTime) : undefined,
       endTime: body.endTime ? new Date(body.endTime) : undefined,
     });
+
+    if (previous && result.count > 0) {
+      after(() => notifyAppointmentUpdated(id, previous, request));
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -63,11 +74,24 @@ export async function DELETE(
     }
 
     const { id } = await params;
+    // Copie avant suppression, pour prévenir l'autre partie par email
+    const snapshot = await prisma.appointment.findUnique({
+      where: { id },
+      include: {
+        eventType: { select: { id: true, name: true, duration: true } },
+        user: { select: { name: true, email: true } },
+      },
+    });
     const result = await deleteAppointment(id, session.user.id, session.user.email || undefined);
 
     // Vérifier si un rendez-vous a été supprimé
     if (result.count === 0) {
       return NextResponse.json({ error: "Rendez-vous non trouvé ou vous n'avez pas la permission de le supprimer" }, { status: 404 });
+    }
+
+    if (snapshot) {
+      const deletedBy = snapshot.userId === session.user.id ? "pro" : "client";
+      after(() => notifyAppointmentDeleted(snapshot, deletedBy, request));
     }
 
     return NextResponse.json({ success: true });

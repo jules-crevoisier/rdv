@@ -18,6 +18,7 @@
    AUTH_SECRET=<openssl rand -base64 32>
    AUTH_URL=https://ton-domaine.fr
    ```
+   (+ les variables Resend, voir « Emails » plus bas)
 4. Onglet **Domains** : ajouter le domaine sur le service `app`, port `3000` (HTTPS via Let's Encrypt).
 5. Activer **Autodeploy** (webhook GitHub) : chaque push sur `master` rebuild, migre puis redémarre.
 
@@ -26,6 +27,35 @@
 Build type `Dockerfile`, port `3000`, mêmes variables. Les migrations ne sont alors pas lancées
 automatiquement : les lancer une fois par changement de schéma avec
 `docker build --target migrate -t rdv-migrate . && docker run --rm -e DATABASE_URL=... rdv-migrate`.
+
+## Emails (Resend)
+
+Les emails (confirmation d'adresse, mot de passe oublié, notifications et rappels de rendez-vous) partent via [Resend](https://resend.com).
+
+1. Dans Resend : **Domains → Add domain** (ex. `srko.fr`), ajouter chez le registrar les enregistrements DNS affichés (SPF, DKIM, et idéalement DMARC), attendre le statut *Verified*.
+2. **API Keys → Create API key**, permission *Sending access*, limitée au domaine.
+3. Dans Dokploy, onglet **Environment** du compose, ajouter :
+   ```
+   RESEND_API_KEY=re_...
+   EMAIL_FROM=Reservy <rdv@srko.fr>
+   APP_URL=https://rdv.srko.fr
+   CRON_SECRET=<openssl rand -hex 32>
+   ```
+   puis redéployer.
+
+Sans `RESEND_API_KEY`, l'app fonctionne comme avant : aucun email ne part (leur contenu est écrit dans les logs) et
+la confirmation d'adresse n'est pas exigée. Dès que Resend est configuré, les nouveaux comptes doivent confirmer leur
+email avant de se connecter (`REQUIRE_EMAIL_VERIFICATION=false` pour désactiver). Les comptes existants sont marqués
+confirmés par la migration.
+
+### Rappels J-1
+
+`/api/cron/reminders` envoie un rappel aux clients dont le rendez-vous confirmé est dans les 24 h. À appeler toutes
+les heures. Dans Dokploy : **Schedules** (sur le compose, service `app`) → cron `0 * * * *`, commande :
+
+```sh
+wget -qO- --header="Authorization: Bearer $CRON_SECRET" http://127.0.0.1:3000/api/cron/reminders
+```
 
 ## Santé
 
