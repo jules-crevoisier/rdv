@@ -13,7 +13,7 @@ model User {
   id            String    @id @default(cuid())
   email         String    @unique
   name          String?
-  password      String
+  password      String?   // null : compte créé via Google ou Discord
   emailVerified DateTime?
   calendarToken String?   @unique
   createdAt     DateTime  @default(now())
@@ -55,7 +55,7 @@ model Client {
   id            String        @id @default(cuid())
   email         String        @unique
   name          String?
-  password      String
+  password      String?   // null : compte créé via Google ou Discord
   emailVerified DateTime?
   phone         String?
   createdAt     DateTime      @default(now())

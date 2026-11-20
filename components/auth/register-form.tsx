@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CheckInbox } from "./check-inbox";
 import { FieldError, FormMessage } from "./form-message";
+import { OAuthButtons } from "./oauth-buttons";
 import { PasswordInput } from "./password-input";
 
 type Field = "name" | "email" | "phone" | "password";
@@ -85,91 +86,94 @@ export const RegisterForm = ({ type, redirectTo }: { type: "user" | "client"; re
   const describedBy = (f: Field) => (fieldErrors[f] ? `${prefix}-${f}-error` : undefined);
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4">
-      {error ? <FormMessage tone="error">{error}</FormMessage> : null}
+    <div className="space-y-4">
+      <OAuthButtons redirectTo={redirectTo} divider="ou créez un compte avec votre email" />
+      <form onSubmit={onSubmit} className="space-y-4">
+        {error ? <FormMessage tone="error">{error}</FormMessage> : null}
 
-      <div className="space-y-2">
-        <Label htmlFor={`${prefix}-name`}>{type === "client" ? "Nom complet" : "Nom"}</Label>
-        <Input
-          id={`${prefix}-name`}
-          autoComplete="name"
-          value={form.name}
-          onChange={set("name")}
-          placeholder="Camille Martin"
-          disabled={loading}
-          className="h-10"
-          aria-invalid={!!fieldErrors.name}
-          aria-describedby={describedBy("name")}
-        />
-        <FieldError id={`${prefix}-name-error`} message={fieldErrors.name} />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor={`${prefix}-email`}>Email</Label>
-        <Input
-          id={`${prefix}-email`}
-          type="email"
-          autoComplete="email"
-          inputMode="email"
-          value={form.email}
-          onChange={set("email")}
-          placeholder="vous@exemple.fr"
-          required
-          disabled={loading}
-          className="h-10"
-          aria-invalid={!!fieldErrors.email}
-          aria-describedby={describedBy("email")}
-        />
-        <FieldError id={`${prefix}-email-error`} message={fieldErrors.email} />
-      </div>
-
-      {type === "client" ? (
         <div className="space-y-2">
-          <Label htmlFor={`${prefix}-phone`}>
-            Téléphone <span className="font-normal text-muted-foreground">(facultatif)</span>
-          </Label>
+          <Label htmlFor={`${prefix}-name`}>{type === "client" ? "Nom complet" : "Nom"}</Label>
           <Input
-            id={`${prefix}-phone`}
-            type="tel"
-            autoComplete="tel"
-            value={form.phone}
-            onChange={set("phone")}
+            id={`${prefix}-name`}
+            autoComplete="name"
+            value={form.name}
+            onChange={set("name")}
+            placeholder="Camille Martin"
             disabled={loading}
             className="h-10"
-            aria-invalid={!!fieldErrors.phone}
-            aria-describedby={describedBy("phone")}
+            aria-invalid={!!fieldErrors.name}
+            aria-describedby={describedBy("name")}
           />
-          <FieldError id={`${prefix}-phone-error`} message={fieldErrors.phone} />
+          <FieldError id={`${prefix}-name-error`} message={fieldErrors.name} />
         </div>
-      ) : null}
 
-      <div className="space-y-2">
-        <Label htmlFor={`${prefix}-password`}>Mot de passe</Label>
-        <PasswordInput
-          id={`${prefix}-password`}
-          autoComplete="new-password"
-          value={form.password}
-          onChange={set("password")}
-          placeholder="8 caractères minimum"
-          required
-          minLength={8}
-          disabled={loading}
-          className="h-10"
-          aria-invalid={!!fieldErrors.password}
-          aria-describedby={describedBy("password") ?? `${prefix}-password-hint`}
-        />
-        {fieldErrors.password ? (
-          <FieldError id={`${prefix}-password-error`} message={fieldErrors.password} />
-        ) : (
-          <p id={`${prefix}-password-hint`} className="text-xs text-muted-foreground">
-            8 caractères minimum. Le bouton œil permet de vérifier la saisie.
-          </p>
-        )}
-      </div>
+        <div className="space-y-2">
+          <Label htmlFor={`${prefix}-email`}>Email</Label>
+          <Input
+            id={`${prefix}-email`}
+            type="email"
+            autoComplete="email"
+            inputMode="email"
+            value={form.email}
+            onChange={set("email")}
+            placeholder="vous@exemple.fr"
+            required
+            disabled={loading}
+            className="h-10"
+            aria-invalid={!!fieldErrors.email}
+            aria-describedby={describedBy("email")}
+          />
+          <FieldError id={`${prefix}-email-error`} message={fieldErrors.email} />
+        </div>
 
-      <Button type="submit" className="h-10 w-full active:scale-[0.98]" disabled={loading}>
-        {loading ? "Création du compte..." : "Créer mon compte"}
-      </Button>
-    </form>
+        {type === "client" ? (
+          <div className="space-y-2">
+            <Label htmlFor={`${prefix}-phone`}>
+              Téléphone <span className="font-normal text-muted-foreground">(facultatif)</span>
+            </Label>
+            <Input
+              id={`${prefix}-phone`}
+              type="tel"
+              autoComplete="tel"
+              value={form.phone}
+              onChange={set("phone")}
+              disabled={loading}
+              className="h-10"
+              aria-invalid={!!fieldErrors.phone}
+              aria-describedby={describedBy("phone")}
+            />
+            <FieldError id={`${prefix}-phone-error`} message={fieldErrors.phone} />
+          </div>
+        ) : null}
+
+        <div className="space-y-2">
+          <Label htmlFor={`${prefix}-password`}>Mot de passe</Label>
+          <PasswordInput
+            id={`${prefix}-password`}
+            autoComplete="new-password"
+            value={form.password}
+            onChange={set("password")}
+            placeholder="8 caractères minimum"
+            required
+            minLength={8}
+            disabled={loading}
+            className="h-10"
+            aria-invalid={!!fieldErrors.password}
+            aria-describedby={describedBy("password") ?? `${prefix}-password-hint`}
+          />
+          {fieldErrors.password ? (
+            <FieldError id={`${prefix}-password-error`} message={fieldErrors.password} />
+          ) : (
+            <p id={`${prefix}-password-hint`} className="text-xs text-muted-foreground">
+              8 caractères minimum. Le bouton œil permet de vérifier la saisie.
+            </p>
+          )}
+        </div>
+
+        <Button type="submit" className="h-10 w-full active:scale-[0.98]" disabled={loading}>
+          {loading ? "Création du compte..." : "Créer mon compte"}
+        </Button>
+      </form>
+    </div>
   );
 };
