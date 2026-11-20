@@ -1,21 +1,7 @@
 import NextAuth from "next-auth";
+import { CLIENT_SESSION_COOKIE } from "./lib/session-cookies";
 import CredentialsProvider from "next-auth/providers/credentials";
-import bcrypt from "bcryptjs";
-
-// Import dynamique de Prisma pour éviter les problèmes d'initialisation
-let prisma: any;
-async function getPrisma() {
-  if (!prisma) {
-    try {
-      const { prisma: prismaClient } = await import("./lib/prisma");
-      prisma = prismaClient;
-    } catch (error) {
-      console.error("[AuthClient] Failed to import Prisma:", error);
-      throw error;
-    }
-  }
-  return prisma;
-}
+import { authorizeAccount, EmailNotVerifiedError } from "./lib/auth-credentials";
 
 export const { handlers: clientHandlers, auth: clientAuth, signIn: clientSignIn, signOut: clientSignOut } = NextAuth({
   secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
@@ -29,42 +15,18 @@ export const { handlers: clientHandlers, auth: clientAuth, signIn: clientSignIn,
   },
   providers: [
     CredentialsProvider({
+      id: "client-credentials",
       name: "ClientCredentials",
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          return null;
-        }
-
         try {
-          const db = await getPrisma();
-          const client = await db.client.findUnique({
-            where: { email: credentials.email as string },
-          });
-
-          if (!client) {
-            return null;
-          }
-
-          const isPasswordValid = await bcrypt.compare(
-            credentials.password as string,
-            client.password
-          );
-
-          if (!isPasswordValid) {
-            return null;
-          }
-
-          return {
-            id: client.id,
-            email: client.email,
-            name: client.name || client.email,
-          };
+          return await authorizeAccount("client", credentials);
         } catch (error) {
-          console.error("Client auth error:", error);
+          if (error instanceof EmailNotVerifiedError) throw error;
+          console.error("[Auth] client authorize error:", error);
           return null;
         }
       },
@@ -72,6 +34,13 @@ export const { handlers: clientHandlers, auth: clientAuth, signIn: clientSignIn,
   ],
   session: {
     strategy: "jwt",
+  },
+  // Cookies distincts de ceux des pros (auth.ts) : sans ça, une session client
+  // était lue comme une session pro et inversement.
+  cookies: {
+    sessionToken: { name: CLIENT_SESSION_COOKIE },
+    callbackUrl: { name: "rdv-client.callback-url" },
+    csrfToken: { name: "rdv-client.csrf-token" },
   },
   callbacks: {
     async jwt({ token, user }) {

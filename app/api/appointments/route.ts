@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
+import { notifyAppointmentCreated } from "@/lib/email/appointment-emails";
 import { auth } from "@/auth";
 import { getPublicEventType, getAppointments } from "@/lib/db";
 import { prisma } from "@/lib/prisma";
@@ -108,6 +109,9 @@ export async function POST(request: Request) {
       data: appointmentData,
       include: { eventType: true },
     });
+
+    // Emails au client et au pro, envoyés après la réponse pour ne pas ralentir la réservation
+    after(() => notifyAppointmentCreated(appointment.id, request));
 
     return NextResponse.json(appointment, { status: 201 });
   } catch (error: any) {
