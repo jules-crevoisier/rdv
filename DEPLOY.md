@@ -77,6 +77,9 @@ permet d'en ajouter un plus tard.
    AUTH_DISCORD_SECRET=...
    ```
 
+Google exige une politique de confidentialité publique pour publier l'app : c'est `https://rdv.srko.fr/confidentialite`
+(page d'accueil de l'app : `https://rdv.srko.fr`). Son adresse de contact vient de `CONTACT_EMAIL` (sinon `EMAIL_REPLY_TO`).
+
 Deux URLs de retour par fournisseur : l'espace pro (`/api/auth`) et l'espace client (`/api/auth/client`) sont deux
 sessions séparées.
 
