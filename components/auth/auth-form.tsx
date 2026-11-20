@@ -10,9 +10,11 @@ type AuthFormProps = {
   defaultTab?: "login" | "register";
   defaultEmail?: string;
   notice?: string | null;
+  /** Page à ouvrir une fois connecté. */
+  redirectTo?: string;
 };
 
-export const AuthForm = ({ defaultTab = "login", defaultEmail, notice }: AuthFormProps) => {
+export const AuthForm = ({ defaultTab = "login", defaultEmail, notice, redirectTo = "/" }: AuthFormProps) => {
   const [activeTab, setActiveTab] = useState<"login" | "register">(defaultTab);
 
   return (
@@ -31,11 +33,11 @@ export const AuthForm = ({ defaultTab = "login", defaultEmail, notice }: AuthFor
           </TabsList>
 
           <TabsContent value="login" className="mt-6">
-            <LoginForm type="user" redirectTo="/" defaultEmail={defaultEmail} notice={notice} />
+            <LoginForm type="user" redirectTo={redirectTo} defaultEmail={defaultEmail} notice={notice} />
           </TabsContent>
 
           <TabsContent value="register" className="mt-6">
-            <RegisterForm type="user" redirectTo="/" />
+            <RegisterForm type="user" redirectTo={redirectTo} defaultEmail={defaultEmail} />
           </TabsContent>
         </Tabs>
       </CardContent>

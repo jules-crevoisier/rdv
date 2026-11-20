@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { CalendarDays, Inbox, LayoutGrid, LogOut, Plus, UserRoundCheck, Users } from "lucide-react";
+import { CalendarDays, ClipboardList, Inbox, LayoutGrid, LogOut, Plus, UserRoundCheck, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,11 +20,39 @@ import { Brand } from "@/components/app/brand";
 
 const navigation = [
   { name: "Aujourd'hui", short: "Aujourd'hui", href: "/", icon: CalendarDays },
-  { name: "Réservations", short: "Réservations", href: "/appointments", icon: Inbox },
+  { name: "Réservations", short: "Réservations", tiny: "Résas", href: "/appointments", icon: Inbox },
   { name: "Types de rendez-vous", short: "Types", href: "/event-types", icon: LayoutGrid },
   { name: "Responsables", short: "Équipe", href: "/staff", icon: UserRoundCheck },
   { name: "Clients", short: "Clients", href: "/clients", icon: Users },
 ];
+
+const interviewsItem = { name: "Mes entretiens", short: "Entretiens", href: "/mes-entretiens", icon: ClipboardList };
+
+// Nombre d'entretiens à venir confiés à ce compte, lu une fois par onglet.
+let interviewCount: Promise<number> | null = null;
+const loadInterviewCount = () =>
+  (interviewCount ??= fetch("/api/me/interviews?count=1")
+    .then((r) => (r.ok ? r.json() : { count: 0 }))
+    .then((d: { count?: number }) => d.count ?? 0)
+    .catch(() => 0));
+
+/** Navigation du compte : « Mes entretiens » s'ajoute quand on est responsable d'au moins un entretien à venir. */
+const useNavigation = () => {
+  const pathname = usePathname();
+  const { status } = useSession();
+  const [hasInterviews, setHasInterviews] = useState(false);
+
+  useEffect(() => {
+    if (status !== "authenticated") return;
+    let active = true;
+    loadInterviewCount().then((n) => active && setHasInterviews(n > 0));
+    return () => {
+      active = false;
+    };
+  }, [status]);
+
+  return hasInterviews || pathname.startsWith(interviewsItem.href) ? [...navigation, interviewsItem] : navigation;
+};
 
 const isActivePath = (pathname: string, href: string) =>
   href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
@@ -68,6 +97,12 @@ const UserMenu = ({ align = "start" }: { align?: "start" | "end" }) => {
           <p className="truncate text-xs text-muted-foreground">{session.user.email}</p>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href={interviewsItem.href}>
+            <interviewsItem.icon />
+            {interviewsItem.name}
+          </Link>
+        </DropdownMenuItem>
         <DropdownMenuItem variant="destructive" onClick={handleSignOut}>
           <LogOut />
           Se déconnecter
@@ -80,6 +115,7 @@ const UserMenu = ({ align = "start" }: { align?: "start" | "end" }) => {
 /* Barre latérale (≥ lg) */
 export const Sidebar = () => {
   const pathname = usePathname();
+  const items = useNavigation();
 
   return (
     <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r bg-sidebar px-3 py-4 lg:flex">
@@ -93,7 +129,7 @@ export const Sidebar = () => {
       </Button>
 
       <nav className="mt-4 flex flex-col gap-0.5" aria-label="Navigation principale">
-        {navigation.map((item) => {
+        {items.map((item) => {
           const Icon = item.icon;
           const active = isActivePath(pathname, item.href);
           return (
@@ -126,6 +162,7 @@ export const Sidebar = () => {
 /* Barre du haut + barre d'onglets en bas (< lg) : les actions restent sous le pouce. */
 export const MobileNav = () => {
   const pathname = usePathname();
+  const items = useNavigation();
 
   return (
     <>
@@ -145,10 +182,10 @@ export const MobileNav = () => {
       </header>
 
       <nav
-        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t bg-background/92 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 grid auto-cols-fr grid-flow-col border-t bg-background/92 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
         aria-label="Navigation principale"
       >
-        {navigation.map((item) => {
+        {items.map((item) => {
           const Icon = item.icon;
           const active = isActivePath(pathname, item.href);
           return (
@@ -157,12 +194,13 @@ export const MobileNav = () => {
               href={item.href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "flex h-16 flex-col items-center justify-center gap-1 text-[0.6875rem] font-medium outline-none focus-visible:bg-accent",
+                "flex h-16 min-w-0 flex-col items-center justify-center gap-1 px-0.5 font-medium outline-none focus-visible:bg-accent",
+                items.length > 5 ? "text-[0.625rem]" : "text-[0.6875rem]",
                 active ? "text-foreground" : "text-muted-foreground"
               )}
             >
                             <Icon className="size-5" />
-              {item.short}
+              <span className="max-w-full truncate">{(items.length > 5 && (item as { tiny?: string }).tiny) || item.short}</span>
             </Link>
           );
         })}
