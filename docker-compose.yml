@@ -28,6 +28,7 @@ services:
       APP_URL: ${APP_URL:-}
       APP_NAME: ${APP_NAME:-}
       APP_TIMEZONE: ${APP_TIMEZONE:-Europe/Paris}
+      TZ: ${APP_TIMEZONE:-Europe/Paris}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       EMAIL_FROM: ${EMAIL_FROM:-}
       EMAIL_REPLY_TO: ${EMAIL_REPLY_TO:-}

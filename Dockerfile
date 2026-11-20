@@ -42,7 +42,11 @@ CMD ["node_modules/.bin/prisma", "migrate", "deploy"]
 # ---- runner : image finale minimale ----
 FROM node:${NODE_VERSION} AS runner
 WORKDIR /app
+# Les créneaux sont calculés en heure locale du serveur (setHours) : sans fuseau, le conteneur est en UTC
+# et une plage 08:00-12:00 sortait en 09:00-13:00 à Paris. tzdata ~ 0,5 Mo.
+RUN apk add --no-cache tzdata
 ENV NODE_ENV=production \
+    TZ=Europe/Paris \
     NEXT_TELEMETRY_DISABLED=1 \
     PORT=3000 \
     HOSTNAME=0.0.0.0
