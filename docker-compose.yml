@@ -26,7 +26,7 @@ services:
       AUTH_SECRET: ${AUTH_SECRET:?AUTH_SECRET manquant}
       AUTH_URL: ${AUTH_URL:-}
       APP_URL: ${APP_URL:-}
-      APP_NAME: ${APP_NAME:-}
+      BRAND_NAME: ${BRAND_NAME:-}
       APP_TIMEZONE: ${APP_TIMEZONE:-Europe/Paris}
       TZ: ${APP_TIMEZONE:-Europe/Paris}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
