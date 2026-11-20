@@ -9,7 +9,8 @@ export type Account = {
   id: string;
   email: string;
   name: string | null;
-  password: string;
+  /** null pour un compte créé via Google ou Discord. */
+  password: string | null;
   emailVerified: Date | null;
 };
 

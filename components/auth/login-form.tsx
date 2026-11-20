@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FormMessage } from "./form-message";
 import { PasswordInput } from "./password-input";
+import { OAuthButtons } from "./oauth-buttons";
 import { ResendButton } from "./resend-button";
 
 type LoginFormProps = {
@@ -53,58 +54,61 @@ export const LoginForm = ({ type, redirectTo, defaultEmail = "", notice }: Login
   };
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4" noValidate={false}>
-      {notice && !error ? <FormMessage tone="success">{notice}</FormMessage> : null}
-      {error === "credentials" ? <FormMessage tone="error">Email ou mot de passe incorrect.</FormMessage> : null}
-      {error === "unknown" ? <FormMessage tone="error">Connexion impossible pour le moment, réessayez.</FormMessage> : null}
-      {error === "unverified" ? (
-        <FormMessage tone="error">
-          <p>Confirmez d&apos;abord votre adresse avec le lien reçu par email.</p>
-          <ResendButton email={email} type={type} startCoolingDown={false} variant="link" label="Renvoyer le lien" />
-        </FormMessage>
-      ) : null}
+    <div className="space-y-4">
+      <OAuthButtons redirectTo={redirectTo} />
+      <form onSubmit={onSubmit} className="space-y-4" noValidate={false}>
+        {notice && !error ? <FormMessage tone="success">{notice}</FormMessage> : null}
+        {error === "credentials" ? <FormMessage tone="error">Email ou mot de passe incorrect.</FormMessage> : null}
+        {error === "unknown" ? <FormMessage tone="error">Connexion impossible pour le moment, réessayez.</FormMessage> : null}
+        {error === "unverified" ? (
+          <FormMessage tone="error">
+            <p>Confirmez d&apos;abord votre adresse avec le lien reçu par email.</p>
+            <ResendButton email={email} type={type} startCoolingDown={false} variant="link" label="Renvoyer le lien" />
+          </FormMessage>
+        ) : null}
 
-      <div className="space-y-2">
-        <Label htmlFor={`${prefix}-email`}>Email</Label>
-        <Input
-          id={`${prefix}-email`}
-          type="email"
-          autoComplete="email"
-          inputMode="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="vous@exemple.fr"
-          required
-          disabled={loading}
-          className="h-10"
-        />
-      </div>
-
-      <div className="space-y-2">
-        <div className="flex items-center justify-between gap-2">
-          <Label htmlFor={`${prefix}-password`}>Mot de passe</Label>
-          <Link
-            href={`/forgot-password${type === "client" ? "?type=client" : ""}${email ? `${type === "client" ? "&" : "?"}email=${encodeURIComponent(email)}` : ""}`}
-            className="rounded-sm text-sm text-muted-foreground underline-offset-4 outline-none hover:text-foreground hover:underline focus-visible:underline"
-          >
-            Mot de passe oublié ?
-          </Link>
+        <div className="space-y-2">
+          <Label htmlFor={`${prefix}-email`}>Email</Label>
+          <Input
+            id={`${prefix}-email`}
+            type="email"
+            autoComplete="email"
+            inputMode="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="vous@exemple.fr"
+            required
+            disabled={loading}
+            className="h-10"
+          />
         </div>
-        <PasswordInput
-          id={`${prefix}-password`}
-          autoComplete="current-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="••••••••"
-          required
-          disabled={loading}
-          className="h-10"
-        />
-      </div>
 
-      <Button type="submit" className="h-10 w-full active:scale-[0.98]" disabled={loading}>
-        {loading ? "Connexion..." : "Se connecter"}
-      </Button>
-    </form>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <Label htmlFor={`${prefix}-password`}>Mot de passe</Label>
+            <Link
+              href={`/forgot-password${type === "client" ? "?type=client" : ""}${email ? `${type === "client" ? "&" : "?"}email=${encodeURIComponent(email)}` : ""}`}
+              className="rounded-sm text-sm text-muted-foreground underline-offset-4 outline-none hover:text-foreground hover:underline focus-visible:underline"
+            >
+              Mot de passe oublié ?
+            </Link>
+          </div>
+          <PasswordInput
+            id={`${prefix}-password`}
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+            required
+            disabled={loading}
+            className="h-10"
+          />
+        </div>
+
+        <Button type="submit" className="h-10 w-full active:scale-[0.98]" disabled={loading}>
+          {loading ? "Connexion..." : "Se connecter"}
+        </Button>
+      </form>
+    </div>
   );
 };
