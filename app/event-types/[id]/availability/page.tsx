@@ -9,6 +9,8 @@ import { AvailabilityForm } from "@/components/availability-form";
 import type { TimeSlot } from "@/lib/types";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { PageHeader } from "@/components/app/page-header";
+import { PageSkeleton } from "@/components/app/loading";
 
 type DateAvailability = {
   date: string;
@@ -42,19 +44,17 @@ export default function AvailabilityPage() {
   const [dateAvailabilities, setDateAvailabilities] = useState<DateAvailability[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
-      console.log("[AvailabilityPage] Chargement pour eventTypeId:", id);
       if (!session?.user) {
-        console.log("[AvailabilityPage] Pas de session");
         setIsLoading(false);
         return;
       }
 
       try {
         const response = await fetch(`/api/event-types/${id}`);
-        console.log("[AvailabilityPage] Réponse status:", response.status);
         
         if (!response.ok) {
           console.error("[AvailabilityPage] Erreur:", response.status);
@@ -63,7 +63,6 @@ export default function AvailabilityPage() {
         }
 
         const data = await response.json();
-        console.log("[AvailabilityPage] Type chargé:", data);
         setEventType(data);
 
         // Charger les disponibilités par date
@@ -71,7 +70,6 @@ export default function AvailabilityPage() {
         if (data.availability?.dateOverrides) {
           try {
             availabilities = JSON.parse(data.availability.dateOverrides);
-            console.log("[AvailabilityPage] DateAvailabilities parsés:", availabilities);
           } catch (error) {
             console.error("[AvailabilityPage] Erreur lors du parsing des dateOverrides:", error);
           }
@@ -97,13 +95,9 @@ export default function AvailabilityPage() {
     if (!eventType) return;
 
     setIsSaving(true);
+    setSaveError(null);
 
     try {
-      console.log("[AvailabilityPage] Envoi des disponibilités:", {
-        eventTypeId: id,
-        dateOverrides: dateAvailabilities,
-      });
-
       const response = await fetch(`/api/availability/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -113,20 +107,18 @@ export default function AvailabilityPage() {
         }),
       });
 
-      console.log("[AvailabilityPage] Réponse status:", response.status);
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({ error: "Erreur lors de la sauvegarde" }));
-        alert(error.error || "Erreur lors de la sauvegarde");
+        setSaveError(error.error || "Les horaires n'ont pas pu être enregistrés.");
         setIsSaving(false);
         return;
       }
 
-      console.log("[AvailabilityPage] Disponibilités sauvegardées avec succès");
       router.push("/event-types");
     } catch (error) {
       console.error("[AvailabilityPage] Erreur:", error);
-      alert("Une erreur est survenue");
+      setSaveError("Les horaires n'ont pas pu être enregistrés. Vérifiez votre connexion.");
       setIsSaving(false);
     }
   };
@@ -134,9 +126,7 @@ export default function AvailabilityPage() {
   if (isLoading || !eventType) {
     return (
       <MainLayout>
-        <div className="flex items-center justify-center py-12">
-          <p>Chargement...</p>
-        </div>
+        <PageSkeleton rows={3} />
       </MainLayout>
     );
   }
@@ -144,18 +134,16 @@ export default function AvailabilityPage() {
   return (
     <MainLayout>
       <div className="mx-auto max-w-4xl space-y-8">
-        <div className="flex items-center gap-4">
-          <Link href="/event-types">
-            <Button variant="ghost" size="icon">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
+        <div className="space-y-4">
+          <Link href="/event-types" className="inline-flex min-h-11 items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
+            <ArrowLeft className="size-4" />
+            Types de rendez-vous
           </Link>
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold">Gérer les disponibilités</h1>
-            <p className="text-sm sm:text-base text-muted-foreground">
-              Configurez les plages horaires pour {eventType.name}
-            </p>
-          </div>
+          <PageHeader
+            eyebrow={eventType.name}
+            title="Horaires de réservation"
+            description="Choisissez les jours ouverts et leurs plages : seuls ces créneaux sont proposés aux clients."
+          />
         </div>
 
         <AvailabilityForm
@@ -163,14 +151,18 @@ export default function AvailabilityPage() {
           onChange={handleAvailabilityChange}
         />
 
-        <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4">
-          <Link href="/event-types" className="w-full sm:w-auto">
-            <Button type="button" variant="outline" className="w-full sm:w-auto">
-              Annuler
-            </Button>
-          </Link>
-          <Button onClick={handleSave} disabled={isSaving} className="w-full sm:w-auto">
-            {isSaving ? "Enregistrement..." : "Enregistrer les disponibilités"}
+        {saveError && (
+          <p role="alert" className="rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            {saveError}
+          </p>
+        )}
+
+        <div className="sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 -mx-4 flex gap-3 border-t bg-background/90 px-4 py-3 backdrop-blur sm:static sm:mx-0 sm:justify-end sm:border-0 sm:bg-transparent sm:p-0 lg:bottom-0">
+          <Button asChild type="button" variant="outline" className="flex-1 sm:flex-none">
+            <Link href="/event-types">Annuler</Link>
+          </Button>
+          <Button onClick={handleSave} disabled={isSaving} className="flex-1 sm:flex-none">
+            {isSaving ? "Enregistrement…" : "Enregistrer les horaires"}
           </Button>
         </div>
       </div>
