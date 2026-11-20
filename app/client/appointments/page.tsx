@@ -3,13 +3,15 @@
 import { useState, useEffect } from "react";
 import { useSession, signOut, SessionProvider } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { MainLayout } from "@/components/layout/main-layout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { formatDate, formatTime } from "@/lib/utils";
-import { Clock, Calendar as CalendarIcon, User, Mail, Phone, FileText, LogOut } from "lucide-react";
-import Link from "next/link";
+import { Brand } from "@/components/app/brand";
+import { PageHeader } from "@/components/app/page-header";
+import { PageSkeleton } from "@/components/app/loading";
+import { EmptyState } from "@/components/app/empty-state";
+import { StatusPill } from "@/components/app/status";
+import { Ticket } from "@/components/app/ticket";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 type AppointmentFromDB = {
   id: string;
@@ -29,6 +31,27 @@ type AppointmentFromDB = {
     color: string;
   };
 };
+
+const ClientShell = ({ children, onSignOut, signedIn }: { children: React.ReactNode; onSignOut: () => void; signedIn: boolean }) => (
+  <div className="min-h-dvh">
+    <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur-md">
+      <div className="mx-auto flex h-16 max-w-3xl items-center justify-between gap-3 px-4 sm:px-6">
+        <Brand href="/client/appointments" />
+        <div className="flex items-center gap-1">
+          <ThemeToggle />
+          {signedIn && (
+            <Button variant="ghost" onClick={onSignOut}>
+              <LogOut />
+              <span className="hidden sm:inline">Se déconnecter</span>
+            </Button>
+          )}
+        </div>
+      </div>
+    </header>
+    <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-12">{children}</main>
+  </div>
+);
+
 
 function ClientAppointmentsContent() {
   const { data: session, status: sessionStatus } = useSession();
@@ -71,178 +94,73 @@ function ClientAppointmentsContent() {
     router.refresh();
   };
 
-  const getStatusBadge = (status: string) => {
-    const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-      pending: "secondary",
-      confirmed: "default",
-      cancelled: "destructive",
-      completed: "outline",
-    };
-
-    const labels: Record<string, string> = {
-      pending: "En attente",
-      confirmed: "Confirmé",
-      cancelled: "Annulé",
-      completed: "Terminé",
-    };
-
-    return (
-      <Badge variant={variants[status] || "secondary"}>
-        {labels[status] || status}
-      </Badge>
-    );
-  };
-
   if (isLoading || sessionStatus === "loading") {
     return (
-      <MainLayout>
-        <div className="flex items-center justify-center py-12">
-          <p>Chargement...</p>
-        </div>
-      </MainLayout>
+      <ClientShell onSignOut={handleSignOut} signedIn={!!session?.user}>
+        <PageSkeleton rows={3} />
+      </ClientShell>
     );
   }
 
+  const now = new Date();
+  const upcoming = appointments
+    .filter((a) => new Date(a.endTime) >= now && a.status !== "cancelled")
+    .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+  const past = appointments
+    .filter((a) => new Date(a.endTime) < now || a.status === "cancelled")
+    .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
+
+  const renderList = (list: AppointmentFromDB[], muted = false) => (
+    <ol className="space-y-3">
+      {list.map((a) => (
+        <Ticket key={a.id} as="li" start={a.startTime} end={a.endTime} showDate color={a.eventType.color} muted={muted}>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="font-medium">{a.eventType.name}</p>
+            <StatusPill status={a.status} />
+          </div>
+          {a.eventType.description && <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{a.eventType.description}</p>}
+          {a.notes && <p className="mt-2 border-l-2 pl-3 text-sm italic text-muted-foreground">{a.notes}</p>}
+        </Ticket>
+      ))}
+    </ol>
+  );
+
   return (
-    <MainLayout>
-      <div className="mx-auto max-w-4xl space-y-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Mes rendez-vous</h1>
-            <p className="text-muted-foreground">
-              Gérez vos rendez-vous réservés
-            </p>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <p className="text-sm font-medium">{session?.user?.name || session?.user?.email}</p>
-              <p className="text-xs text-muted-foreground">Compte client</p>
-            </div>
-            <Button variant="outline" onClick={handleSignOut}>
-              <LogOut className="mr-2 h-4 w-4" />
-              Déconnexion
-            </Button>
-          </div>
-        </div>
+    <ClientShell onSignOut={handleSignOut} signedIn={!!session?.user}>
+      <div className="space-y-10">
+        <PageHeader
+          eyebrow={session?.user?.name || session?.user?.email || "Compte client"}
+          title="Mes rendez-vous"
+          description={
+            upcoming.length
+              ? `${upcoming.length} rendez-vous à venir. Gardez ce billet : il contient l'heure et le lieu.`
+              : "Aucun rendez-vous à venir."
+          }
+        />
 
         {appointments.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-              <CalendarIcon className="h-12 w-12 text-muted-foreground mb-4" />
-              <h2 className="text-xl font-semibold mb-2">Aucun rendez-vous</h2>
-              <p className="text-muted-foreground mb-4">
-                Vous n'avez pas encore de rendez-vous réservé.
-              </p>
-              <Link href="/">
-                <Button>Voir les types de rendez-vous disponibles</Button>
-              </Link>
-            </CardContent>
-          </Card>
+          <EmptyState
+            title="Pas encore de rendez-vous"
+            description="Réservez depuis le lien que vous a envoyé votre praticien ou votre prestataire : le rendez-vous s'affichera ici."
+          />
         ) : (
-          <div className="space-y-4">
-            {appointments.map((appointment) => {
-              const startDate = new Date(appointment.startTime);
-              const endDate = new Date(appointment.endTime);
-              const isPast = endDate < new Date();
-
-              return (
-                <Card key={appointment.id} className={isPast ? "opacity-75" : ""}>
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <div
-                            className="h-3 w-3 rounded-full"
-                            style={{ backgroundColor: appointment.eventType.color }}
-                          />
-                          <CardTitle className="text-lg">{appointment.eventType.name}</CardTitle>
-                        </div>
-                        <CardDescription>{appointment.eventType.description}</CardDescription>
-                      </div>
-                      {getStatusBadge(appointment.status)}
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-2">
-                          <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                          <div>
-                            <p className="text-sm font-medium">Date et heure</p>
-                            <p className="text-sm text-muted-foreground">
-                              {formatDate(startDate)} à {formatTime(startDate)}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              Durée: {appointment.eventType.duration} minutes
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4 text-muted-foreground" />
-                          <div>
-                            <p className="text-sm font-medium">Fin prévue</p>
-                            <p className="text-sm text-muted-foreground">
-                              {formatTime(endDate)}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-muted-foreground" />
-                          <div>
-                            <p className="text-sm font-medium">Nom</p>
-                            <p className="text-sm text-muted-foreground">
-                              {appointment.clientName}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Mail className="h-4 w-4 text-muted-foreground" />
-                          <div>
-                            <p className="text-sm font-medium">Email</p>
-                            <p className="text-sm text-muted-foreground">
-                              {appointment.clientEmail}
-                            </p>
-                          </div>
-                        </div>
-                        {appointment.clientPhone && (
-                          <div className="flex items-center gap-2">
-                            <Phone className="h-4 w-4 text-muted-foreground" />
-                            <div>
-                              <p className="text-sm font-medium">Téléphone</p>
-                              <p className="text-sm text-muted-foreground">
-                                {appointment.clientPhone}
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                        {appointment.notes && (
-                          <div className="flex items-center gap-2">
-                            <FileText className="h-4 w-4 text-muted-foreground" />
-                            <div>
-                              <p className="text-sm font-medium">Notes</p>
-                              <p className="text-sm text-muted-foreground">
-                                {appointment.notes}
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    {isPast && (
-                      <div className="mt-4 rounded-md bg-muted p-2 text-center text-xs text-muted-foreground">
-                        Ce rendez-vous est passé
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
+          <>
+            {upcoming.length > 0 && (
+              <section aria-labelledby="up-title" className="">
+                <h2 id="up-title" className="mb-4 text-xl">À venir</h2>
+                {renderList(upcoming)}
+              </section>
+            )}
+            {past.length > 0 && (
+              <section aria-labelledby="past-title">
+                <h2 id="past-title" className="mb-4 text-xl text-muted-foreground">Historique</h2>
+                {renderList(past, true)}
+              </section>
+            )}
+          </>
         )}
       </div>
-    </MainLayout>
+    </ClientShell>
   );
 }
 

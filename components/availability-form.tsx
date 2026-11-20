@@ -356,9 +356,9 @@ export const AvailabilityForm = ({ dateOverrides = [], onChange }: AvailabilityF
       <CardContent>
         <div className="space-y-4">
           {/* Règles de disponibilité automatiques */}
-          <div className="rounded-lg border bg-muted/30 p-4">
+          <div className="rounded-xl border bg-card p-5">
             <div className="flex items-center justify-between mb-3">
-              <Label className="text-sm font-semibold">Règles de disponibilité automatiques</Label>
+              <Label className="text-base font-semibold">Horaires récurrents</Label>
               <Button
                 type="button"
                 variant="outline"
@@ -374,9 +374,9 @@ export const AvailabilityForm = ({ dateOverrides = [], onChange }: AvailabilityF
             </p>
 
             {showRuleForm && (
-              <div className="space-y-3 p-3 bg-background rounded-md border mb-3">
+              <div className="space-y-4 p-4 bg-secondary/60 rounded-xl mb-3">
                 <div>
-                  <Label className="text-xs font-medium mb-2 block">Jours de la semaine</Label>
+                  <Label className="mb-2 block">Jours de la semaine</Label>
                   <div className="flex flex-wrap gap-2">
                     {DAYS_OF_WEEK.map((day) => (
                       <Button
@@ -385,7 +385,7 @@ export const AvailabilityForm = ({ dateOverrides = [], onChange }: AvailabilityF
                         variant={newRule.daysOfWeek.includes(day.value) ? "default" : "outline"}
                         size="sm"
                         onClick={() => handleToggleDay(day.value)}
-                        className="text-xs"
+                        className="tnum"
                       >
                         {day.label}
                       </Button>
@@ -395,44 +395,44 @@ export const AvailabilityForm = ({ dateOverrides = [], onChange }: AvailabilityF
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label className="text-xs font-medium mb-1 block">Heure de début</Label>
+                    <Label className="mb-1.5 block">Heure de début</Label>
                     <Input
                       type="time"
                       value={newRule.startTime}
                       onChange={(e) => setNewRule({ ...newRule, startTime: e.target.value })}
-                      className="text-xs"
+                      className="tnum"
                     />
                   </div>
                   <div>
-                    <Label className="text-xs font-medium mb-1 block">Heure de fin</Label>
+                    <Label className="mb-1.5 block">Heure de fin</Label>
                     <Input
                       type="time"
                       value={newRule.endTime}
                       onChange={(e) => setNewRule({ ...newRule, endTime: e.target.value })}
-                      className="text-xs"
+                      className="tnum"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label className="text-xs font-medium mb-1 block">Date de début</Label>
+                    <Label className="mb-1.5 block">Date de début</Label>
                     <Input
                       type="date"
                       value={newRule.startDate}
                       onChange={(e) => setNewRule({ ...newRule, startDate: e.target.value })}
                       min={format(new Date(), "yyyy-MM-dd")}
-                      className="text-xs"
+                      className="tnum"
                     />
                   </div>
                   <div>
-                    <Label className="text-xs font-medium mb-1 block">Date de fin</Label>
+                    <Label className="mb-1.5 block">Date de fin</Label>
                     <Input
                       type="date"
                       value={newRule.endDate}
                       onChange={(e) => setNewRule({ ...newRule, endDate: e.target.value })}
                       min={newRule.startDate}
-                      className="text-xs"
+                      className="tnum"
                     />
                   </div>
                 </div>
@@ -459,7 +459,7 @@ export const AvailabilityForm = ({ dateOverrides = [], onChange }: AvailabilityF
                   return (
                     <div
                       key={rule.id}
-                      className="flex items-center justify-between p-2 bg-background rounded-md border text-xs"
+                      className="flex items-center justify-between rounded-xl border bg-background px-3 py-2 text-sm"
                     >
                       <div className="flex-1">
                         <span className="font-medium">{days}</span>
@@ -498,8 +498,8 @@ export const AvailabilityForm = ({ dateOverrides = [], onChange }: AvailabilityF
           </div>
 
           {/* Templates d'horaires réutilisables - toujours visibles */}
-          <div className="rounded-lg border bg-muted/30 p-4">
-            <Label className="text-sm font-semibold mb-3 block">Templates d'horaires réutilisables</Label>
+          <div className="rounded-xl border bg-card p-5">
+            <Label className="text-base font-semibold mb-2 block">Plages types</Label>
             <p className="text-xs text-muted-foreground mb-3">
               Sélectionnez des dates puis cliquez sur un template pour appliquer automatiquement les horaires
             </p>
@@ -535,14 +535,14 @@ export const AvailabilityForm = ({ dateOverrides = [], onChange }: AvailabilityF
           <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
             <div className="space-y-4">
               <div>
-                <Label className="text-base font-semibold mb-2 block">Sélectionner des dates</Label>
+                <Label className="text-base font-semibold mb-2 block">Jours ouverts</Label>
                 <Calendar
                   mode="multiple"
                   selected={selectedDates}
                   onSelect={(dates) => setSelectedDates(dates || [])}
                   locale={fr}
                   weekStartsOn={1}
-                  className="rounded-md border"
+                  className="rounded-xl border bg-card p-3"
                   disabled={(date) => {
                     // Désactiver les dates passées
                     const today = new Date();
@@ -561,7 +561,7 @@ export const AvailabilityForm = ({ dateOverrides = [], onChange }: AvailabilityF
                 Ajouter {selectedDates.length > 0 ? `${selectedDates.length} date${selectedDates.length > 1 ? "s" : ""}` : "des dates"}
               </Button>
               {dateOverrides.length > 0 && (
-                <div className="rounded-lg border bg-muted/50 p-4">
+                <div className="rounded-xl bg-secondary p-4">
                   <p className="text-sm font-medium mb-2">Aperçu ({dateOverrides.length})</p>
                   <div className="flex flex-wrap gap-2">
                     {dateOverrides
@@ -584,9 +584,9 @@ export const AvailabilityForm = ({ dateOverrides = [], onChange }: AvailabilityF
             </div>
 
             <div className="space-y-4">
-              <Label className="text-base font-semibold mb-2 block">Dates configurées</Label>
+              <Label className="text-base font-semibold mb-2 block">Plages par jour</Label>
               {dateOverrides.length === 0 ? (
-                <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+                <div className="rounded-xl border-dashed p-8 text-center text-sm text-muted-foreground">
                   <CalendarIcon className="mx-auto h-8 w-8 mb-2 opacity-50" />
                   <p>Aucune date configurée</p>
                   <p className="text-xs mt-1">Sélectionnez des dates dans le calendrier pour les configurer</p>
@@ -620,7 +620,7 @@ export const AvailabilityForm = ({ dateOverrides = [], onChange }: AvailabilityF
                                   <button
                                     type="button"
                                     onClick={() => handleToggleAvailability(availability.date)}
-                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
+                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ring/40 focus:ring-offset-2 ${
                                       availability.available ? "bg-primary" : "bg-muted"
                                     }`}
                                     role="switch"
@@ -657,7 +657,7 @@ export const AvailabilityForm = ({ dateOverrides = [], onChange }: AvailabilityF
                               ) : (
                                 <div className="space-y-2">
                                   {availability.timeSlots.map((slot, index) => (
-                                    <div key={index} className="flex items-center gap-2 rounded-md border bg-muted/30 p-2">
+                                    <div key={index} className="flex items-center gap-2 rounded-xl bg-secondary/70 p-2">
                                       <Clock className="h-3 w-3 text-muted-foreground" />
                                       <div className="flex items-center gap-2 flex-1">
                                         <Input
@@ -671,7 +671,7 @@ export const AvailabilityForm = ({ dateOverrides = [], onChange }: AvailabilityF
                                               e.target.value
                                             )
                                           }
-                                          className="w-24 h-8 text-xs"
+                                          className="h-9 w-28 text-sm tnum"
                                         />
                                         <span className="text-xs text-muted-foreground">-</span>
                                         <Input
@@ -685,7 +685,7 @@ export const AvailabilityForm = ({ dateOverrides = [], onChange }: AvailabilityF
                                               e.target.value
                                             )
                                           }
-                                          className="w-24 h-8 text-xs"
+                                          className="h-9 w-28 text-sm tnum"
                                         />
                                       </div>
                                       <Button
