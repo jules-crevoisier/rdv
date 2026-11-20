@@ -11,6 +11,7 @@ import { PageSkeleton } from "@/components/app/loading";
 import { EmptyState } from "@/components/app/empty-state";
 import { StatusPill } from "@/components/app/status";
 import { Ticket } from "@/components/app/ticket";
+import { MyAvailability } from "@/components/staff/my-availability";
 
 type Interview = {
   id: string;
@@ -124,10 +125,13 @@ export default function MyInterviewsPage() {
             description="Vos entretiens sont reliés à votre adresse. Ouvrez le lien de confirmation reçu par email, puis revenez ici."
           />
         ) : data.interviews.length === 0 ? (
-          <EmptyState
-            title="Aucun entretien pour l'instant"
-            description={`Dès qu'un organisateur vous place sur un créneau avec l'adresse ${session?.user?.email ?? "de ce compte"}, l'entretien apparaît ici et vous recevez l'invitation par email.`}
-          />
+          <>
+            <EmptyState
+              title="Aucun entretien pour l'instant"
+              description={`Dès qu'un organisateur vous place sur un créneau avec l'adresse ${session?.user?.email ?? "de ce compte"}, l'entretien apparaît ici et vous recevez l'invitation par email.`}
+            />
+            <MyAvailability />
+          </>
         ) : (
           <>
             {upcoming.length > 0 && (
@@ -140,6 +144,7 @@ export default function MyInterviewsPage() {
                 </ol>
               </section>
             )}
+            <MyAvailability />
             {past.length > 0 && (
               <section aria-labelledby="past-title">
                 <h2 id="past-title" className="mb-4 text-xl text-muted-foreground">Passés</h2>

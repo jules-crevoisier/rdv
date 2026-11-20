@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { CalendarDays, ClipboardList, Inbox, LayoutGrid, LogOut, Plus, UserRoundCheck, Users } from "lucide-react";
+import { Check, ChevronsUpDown, CalendarDays, ClipboardList, Inbox, LayoutGrid, LogOut, Plus, ShieldCheck, UserRoundCheck, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,13 +17,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Brand } from "@/components/app/brand";
+import { spaceName, switchWorkspace, useWorkspace, type WorkspaceInfo } from "@/components/workspace/use-workspace";
 
 const navigation = [
   { name: "Aujourd'hui", short: "Aujourd'hui", href: "/", icon: CalendarDays },
   { name: "Réservations", short: "Réservations", tiny: "Résas", href: "/appointments", icon: Inbox },
   { name: "Types de rendez-vous", short: "Types", href: "/event-types", icon: LayoutGrid },
-  { name: "Responsables", short: "Équipe", href: "/staff", icon: UserRoundCheck },
+  { name: "Responsables", short: "Responsables", tiny: "Resp.", href: "/staff", icon: UserRoundCheck },
   { name: "Clients", short: "Clients", href: "/clients", icon: Users },
+  // Barre latérale seulement : sur mobile, la page s'ouvre depuis le menu du compte.
+  { name: "Organisateurs", short: "Organisateurs", href: "/organisateurs", icon: ShieldCheck, desktopOnly: true },
 ];
 
 const interviewsItem = { name: "Mes entretiens", short: "Entretiens", href: "/mes-entretiens", icon: ClipboardList };
@@ -63,8 +66,58 @@ const initials = (name?: string | null, email?: string | null) => {
   return "U";
 };
 
+/* Liste des espaces (le sien et ceux des équipes d'organisation), cochée sur l'espace ouvert. */
+const SpaceItems = ({ workspace }: { workspace: WorkspaceInfo }) => (
+  <>
+    <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">Espaces</DropdownMenuLabel>
+    {workspace.spaces.map((space) => {
+      const current = space.id === workspace.ownerId;
+      return (
+        <DropdownMenuItem key={space.id} onClick={() => !current && switchWorkspace(space.id)} aria-current={current ? "true" : undefined}>
+          <span className="grid size-5 shrink-0 place-items-center rounded bg-muted text-[0.625rem] font-medium" aria-hidden="true">
+            {initials(space.name, space.email)}
+          </span>
+          <span className="min-w-0 flex-1 truncate">{space.mine ? "Mon espace" : spaceName(space)}</span>
+          {current && <Check className="text-foreground" />}
+        </DropdownMenuItem>
+      );
+    })}
+  </>
+);
+
+/* Barre latérale : espace ouvert, et changement d'espace quand on fait partie d'une équipe. */
+const SpaceSwitcher = () => {
+  const { workspace } = useWorkspace();
+  if (!workspace || workspace.spaces.length < 2) return null;
+  const { current } = workspace;
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          className="mt-4 flex min-h-11 w-full items-center gap-2.5 rounded-lg border bg-background px-2.5 text-left shadow-xs outline-none transition-colors hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          aria-label="Changer d'espace"
+        >
+          <span className="grid size-7 shrink-0 place-items-center rounded-md bg-muted text-[0.6875rem] font-medium" aria-hidden="true">
+            {initials(current.name, current.email)}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[0.6875rem] leading-tight text-muted-foreground">{current.mine ? "Espace" : "Équipe de"}</span>
+            <span className="block truncate text-sm font-medium leading-tight">{current.mine ? "Mon espace" : spaceName(current)}</span>
+          </span>
+          <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-56">
+        <SpaceItems workspace={workspace} />
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
+
 const UserMenu = ({ align = "start" }: { align?: "start" | "end" }) => {
   const { data: session } = useSession();
+  const { workspace } = useWorkspace();
   const router = useRouter();
 
   const handleSignOut = async () => {
@@ -103,6 +156,19 @@ const UserMenu = ({ align = "start" }: { align?: "start" | "end" }) => {
             {interviewsItem.name}
           </Link>
         </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/organisateurs">
+            <ShieldCheck />
+            Organisateurs
+          </Link>
+        </DropdownMenuItem>
+        {workspace && workspace.spaces.length > 1 && (
+          <>
+            <DropdownMenuSeparator />
+            <SpaceItems workspace={workspace} />
+          </>
+        )}
+        <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive" onClick={handleSignOut}>
           <LogOut />
           Se déconnecter
@@ -120,8 +186,9 @@ export const Sidebar = () => {
   return (
     <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r bg-sidebar px-3 py-4 lg:flex">
       <Brand className="px-2" />
+      <SpaceSwitcher />
 
-      <Button asChild className="mt-6 w-full">
+      <Button asChild className="mt-4 w-full">
         <Link href="/event-types/new">
           <Plus />
           Nouveau type
@@ -162,7 +229,7 @@ export const Sidebar = () => {
 /* Barre du haut + barre d'onglets en bas (< lg) : les actions restent sous le pouce. */
 export const MobileNav = () => {
   const pathname = usePathname();
-  const items = useNavigation();
+  const items = useNavigation().filter((item) => !("desktopOnly" in item && item.desktopOnly));
 
   return (
     <>

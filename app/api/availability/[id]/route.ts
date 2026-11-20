@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { getWorkspace } from "@/lib/workspace";
 import { getPublicEventType, getEventType, updateAvailability } from "@/lib/db";
 import { getAvailableTimeSlotsForEventType } from "@/lib/availability-utils";
 import type { TimeSlot } from "@/lib/types";
@@ -43,8 +43,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     console.log("[PUT /api/availability/[id]] Début de la mise à jour de la disponibilité");
-    const session = await auth();
-    if (!session?.user?.id) {
+    const ws = await getWorkspace();
+    if (!ws) {
       console.log("[PUT /api/availability/[id]] Erreur: Non autorisé");
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }
@@ -53,7 +53,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     console.log("[PUT /api/availability/[id]] EventTypeId:", id);
     
     // Vérifier que l'eventType appartient à l'utilisateur
-    const eventType = await getEventType(id, session.user.id);
+    const eventType = await getEventType(id, ws.ownerId);
     if (!eventType) {
       console.log("[PUT /api/availability/[id]] Erreur: Type de rendez-vous non trouvé");
       return NextResponse.json({ error: "Type de rendez-vous non trouvé" }, { status: 404 });

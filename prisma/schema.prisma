@@ -22,6 +22,21 @@ model User {
   appointments  Appointment[]
   staffMembers  StaffMember[]
   comments      AppointmentComment[]
+  teamMembers   TeamMember[]
+}
+
+// Co-organisateurs : comptes qui gèrent l'espace d'un organisateur comme lui (créneaux, réservations,
+// responsables, équipe). Reconnus par l'adresse vérifiée de leur compte, comme les responsables.
+model TeamMember {
+  id        String   @id @default(cuid())
+  ownerId   String
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  email     String
+  name      String?
+  createdAt DateTime @default(now())
+
+  @@unique([ownerId, email])
+  @@index([email])
 }
 
 model EventType {
@@ -42,6 +57,7 @@ model EventType {
   availability    Availability?
   appointments    Appointment[]
   slotStaff       SlotStaff[]
+  unavailabilities StaffUnavailability[]
 }
 
 model Availability {
@@ -104,8 +120,25 @@ model StaffMember {
   updatedAt    DateTime      @updatedAt
   appointments Appointment[]
   slots        SlotStaff[]
+  unavailabilities StaffUnavailability[]
 
   @@unique([userId, email])
+}
+
+// Plage où un responsable a indiqué ne pas être disponible (depuis Mes entretiens ou le planning).
+model StaffUnavailability {
+  id            String      @id @default(cuid())
+  staffMemberId String
+  staffMember   StaffMember @relation(fields: [staffMemberId], references: [id], onDelete: Cascade)
+  eventTypeId   String
+  eventType     EventType   @relation(fields: [eventTypeId], references: [id], onDelete: Cascade)
+  date          String      // YYYY-MM-DD
+  startTime     String      // HH:mm
+  endTime       String      // HH:mm
+  createdAt     DateTime    @default(now())
+
+  @@unique([staffMemberId, eventTypeId, date, startTime, endTime], map: "StaffUnavailability_plage_key")
+  @@index([eventTypeId, date])
 }
 
 // Commentaires internes sur un rendez-vous (ex. le pôle visé par le candidat).
