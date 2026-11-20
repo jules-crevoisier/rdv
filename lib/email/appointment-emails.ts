@@ -1,6 +1,7 @@
 import { getAppUrl } from "@/lib/app-config";
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "./client";
+import { STAFF_HOME } from "./staff-emails";
 import { appointmentIcs } from "./ics";
 import {
   bookingCancelledTemplate,
@@ -36,6 +37,7 @@ const urls = (a: Loaded, request?: Request) => {
     manage: `${base}/book/${a.eventType.id}/confirmation?appointmentId=${a.id}`,
     rebook: `${base}/book/${a.eventType.id}`,
     dashboard: `${base}/appointments`,
+    staff: `${base}${STAFF_HOME}`,
   };
 };
 
@@ -73,27 +75,34 @@ export const notifyAppointmentCreated = (appointmentId: string, request?: Reques
         tags: [{ name: "category", value: "booking_new" }],
       }),
       // Les responsables ne sont invités qu'une fois le créneau confirmé
-      ...(a.status === "confirmed" ? a.staff.map((s) => sendStaffInvite(a, s)) : []),
+      ...(a.status === "confirmed" ? a.staff.map((s) => sendStaffInvite(a, s, request)) : []),
     ]);
   });
 
 const staffSummary = (a: AppointmentForEmail) => `${a.eventType.name} : ${a.clientName}`;
 
-const sendStaffInvite = (a: Loaded, s: { id: string; name: string; email: string }) =>
+const staffUrl = (request?: Request) => `${getAppUrl(request)}${STAFF_HOME}`;
+
+const sendStaffInvite = (a: Loaded, s: { id: string; name: string; email: string }, request?: Request) =>
   sendEmail({
     to: s.email,
     replyTo: a.user.email,
-    ...staffInvitedTemplate(a, { staffName: s.name }),
+    ...staffInvitedTemplate(a, { staffName: s.name, url: staffUrl(request) }),
     attachments: [appointmentIcs(a, { summary: staffSummary(a) })],
     idempotencyKey: `staff-invite/${a.id}/${s.id}/${a.startTime.getTime()}`,
     tags: [{ name: "category", value: "staff_invited" }],
   });
 
-const sendStaffCancel = (a: AppointmentForEmail, s: { name: string; email: string }, reason: "cancelled" | "removed") =>
+const sendStaffCancel = (
+  a: AppointmentForEmail,
+  s: { name: string; email: string },
+  reason: "cancelled" | "removed",
+  request?: Request
+) =>
   sendEmail({
     to: s.email,
     replyTo: a.user.email,
-    ...staffCancelledTemplate(a, { staffName: s.name, reason }),
+    ...staffCancelledTemplate(a, { staffName: s.name, reason, url: staffUrl(request) }),
     attachments: [appointmentIcs(a, { cancelled: true, summary: staffSummary(a) })],
     tags: [{ name: "category", value: "staff_cancelled" }],
   });
@@ -129,7 +138,7 @@ export const notifyAppointmentUpdated = (
       const t = bookingCancelledTemplate(a, { audience: "client", rebookUrl: u.rebook });
       await Promise.all([
         sendEmail({ ...base, ...t, attachments: [appointmentIcs(a, { cancelled: true })], tags: [{ name: "category", value: "booking_cancelled" }] }),
-        ...a.staff.map((s) => sendStaffCancel(a, s, "cancelled")),
+        ...a.staff.map((s) => sendStaffCancel(a, s, "cancelled", request)),
       ]);
       return;
     }
@@ -144,7 +153,7 @@ export const notifyAppointmentUpdated = (
           sendEmail({
             to: s.email,
             replyTo: a.user.email,
-            ...staffRescheduledTemplate(a, { staffName: s.name, previousStart: previous.startTime }),
+            ...staffRescheduledTemplate(a, { staffName: s.name, previousStart: previous.startTime, url: u.staff }),
             attachments: [appointmentIcs(a, { summary: staffSummary(a) })],
             tags: [{ name: "category", value: "staff_rescheduled" }],
           })
@@ -157,7 +166,7 @@ export const notifyAppointmentUpdated = (
       const t = bookingConfirmedTemplate(a, { manageUrl: u.manage });
       await Promise.all([
         sendEmail({ ...base, ...t, attachments: [appointmentIcs(a)], tags: [{ name: "category", value: "booking_confirmed" }] }),
-        ...a.staff.map((s) => sendStaffInvite(a, s)),
+        ...a.staff.map((s) => sendStaffInvite(a, s, request)),
       ]);
     }
   });
@@ -184,7 +193,7 @@ export const notifyAppointmentDeleted = (
         attachments: [appointmentIcs(snapshot, { cancelled: true })],
         tags: [{ name: "category", value: "booking_cancelled" }],
       }),
-      ...(snapshot.staff ?? []).map((s) => sendStaffCancel(snapshot, s, "cancelled")),
+      ...(snapshot.staff ?? []).map((s) => sendStaffCancel(snapshot, s, "cancelled", request)),
     ]);
   });
 
