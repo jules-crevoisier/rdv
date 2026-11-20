@@ -14,9 +14,9 @@ import { PasswordInput } from "./password-input";
 type Field = "name" | "email" | "phone" | "password";
 
 /** Inscription commune : pro (nom optionnel) ou client (avec téléphone). */
-export const RegisterForm = ({ type, redirectTo }: { type: "user" | "client"; redirectTo: string }) => {
+export const RegisterForm = ({ type, redirectTo, defaultEmail = "" }: { type: "user" | "client"; redirectTo: string; defaultEmail?: string }) => {
   const router = useRouter();
-  const [form, setForm] = useState({ name: "", email: "", phone: "", password: "" });
+  const [form, setForm] = useState({ name: "", email: defaultEmail, phone: "", password: "" });
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<Field, string>>>({});
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);

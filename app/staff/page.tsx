@@ -109,7 +109,7 @@ export default function StaffPage() {
         {staff.length === 0 ? (
           <EmptyState
             title="Aucun responsable pour l'instant"
-            description="Ajoutez les responsables de chaque pôle avec leur email. Ils n'ont pas besoin de compte."
+            description="Ajoutez les responsables de chaque pôle avec leur email. Ils reçoivent un email pour créer leur compte et suivre leurs entretiens."
             action={
               <Button variant="outline" onClick={() => openForm("new")}>
                 <Plus />

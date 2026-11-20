@@ -249,6 +249,24 @@ export const staffInvitedTemplate = (a: AppointmentForEmail, p: { staffName: str
   }),
 });
 
+/** À un responsable qu'on vient d'ajouter à l'annuaire : lien pour créer son compte (ou se connecter). */
+export const staffWelcomeTemplate = (p: { staffName: string; hostName: string; url: string; hasAccount: boolean }) => ({
+  subject: `${p.hostName} vous ajoute aux entretiens sur ${APP_NAME}`,
+  ...renderEmail({
+    preheader: "Retrouvez les entretiens qui vous sont confiés sur votre compte.",
+    heading: "Vous faites partie de l'équipe",
+    paragraphs: [
+      `Bonjour ${p.staffName},`,
+      `${p.hostName} vous a ajouté·e comme responsable d'entretien. Vous recevrez une invitation par email pour chaque entretien qui vous est confié.`,
+      p.hasAccount
+        ? `Connectez-vous à ${APP_NAME} avec cette adresse pour voir tous vos entretiens au même endroit.`
+        : `Créez votre compte ${APP_NAME} avec cette adresse (ou continuez avec Google ou Discord) pour voir tous vos entretiens au même endroit.`,
+    ],
+    cta: { label: p.hasAccount ? "Voir mes entretiens" : "Créer mon compte", url: p.url },
+    footnote: `Utilisez bien cette adresse email : c'est elle qui relie les entretiens à votre compte.`,
+  }),
+});
+
 /** À un responsable qui n'est plus attendu : rendez-vous annulé ou responsable retiré. */
 export const staffCancelledTemplate = (a: AppointmentForEmail, p: { staffName: string; reason: "cancelled" | "removed" }) => ({
   subject: `${p.reason === "cancelled" ? "Annulé" : "Vous n'êtes plus attendu·e"} : entretien de ${a.clientName}, ${formatWhen(a.startTime)}`,

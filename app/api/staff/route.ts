@@ -1,7 +1,8 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { readStaffBody } from "@/lib/staff";
+import { sendStaffWelcome } from "@/lib/email/staff-emails";
 
 // Annuaire des responsables d'entretien de l'organisateur connecté.
 
@@ -30,6 +31,12 @@ export async function POST(request: Request) {
 
   try {
     const staff = await prisma.staffMember.create({ data: { userId: session.user.id, ...parsed.data } });
+    // Invitation : le responsable apprend qu'il est dans l'équipe et peut créer son compte.
+    const hostId = session.user.id;
+    after(async () => {
+      const host = await prisma.user.findUnique({ where: { id: hostId }, select: { name: true, email: true } });
+      if (host) await sendStaffWelcome(staff, host, request).catch((e) => console.error("[staff-welcome]", e));
+    });
     return NextResponse.json({ ...staff, upcomingCount: 0 }, { status: 201 });
   } catch (error) {
     if ((error as { code?: string })?.code === "P2002") {

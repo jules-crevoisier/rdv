@@ -89,7 +89,8 @@ model Appointment {
   updatedAt     DateTime  @updatedAt
 }
 
-// Responsable (ex. d'un pôle) qui assiste aux entretiens. Pas de compte : il reçoit les invitations par email.
+// Responsable (ex. d'un pôle) qui assiste aux entretiens. Il reçoit les invitations par email ; s'il crée un compte
+// avec la même adresse, ses entretiens s'affichent sur /mes-entretiens.
 model StaffMember {
   id           String        @id @default(cuid())
   userId       String

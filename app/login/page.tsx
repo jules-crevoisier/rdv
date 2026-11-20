@@ -6,6 +6,7 @@ import { FullScreenLoader } from "@/components/app/loading";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { authNotice } from "@/lib/auth-notices";
+import { safeCallback } from "@/lib/safe-redirect";
 
 const LoginContent = () => {
   const searchParams = useSearchParams();
@@ -18,6 +19,7 @@ const LoginContent = () => {
         defaultTab={defaultTab}
         defaultEmail={searchParams.get("email") ?? undefined}
         notice={authNotice(searchParams)}
+        redirectTo={safeCallback(searchParams.get("callbackUrl"))}
       />
     </AuthShell>
   );

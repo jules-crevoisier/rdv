@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { CLIENT_SESSION_COOKIE, PRO_SESSION_COOKIES } from "./lib/session-cookies";
+import { safeCallback } from "./lib/safe-redirect";
 
 // Pages ouvertes sans session
 const PUBLIC_PATHS = [
@@ -44,11 +45,13 @@ export function proxy(request: NextRequest) {
   }
 
   if (hasProSession && path === "/login") {
-    return NextResponse.redirect(new URL("/", request.url));
+    return NextResponse.redirect(new URL(safeCallback(request.nextUrl.searchParams.get("callbackUrl")), request.url));
   }
 
   if (!hasProSession && !startsWithAny(path, PUBLIC_PATHS)) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    const url = new URL("/login", request.url);
+    if (path !== "/") url.searchParams.set("callbackUrl", path + request.nextUrl.search);
+    return NextResponse.redirect(url);
   }
 
   return NextResponse.next();
