@@ -20,6 +20,7 @@ model User {
   updatedAt     DateTime  @updatedAt
   eventTypes    EventType[]
   appointments  Appointment[]
+  staffMembers  StaffMember[]
 }
 
 model EventType {
@@ -39,6 +40,7 @@ model EventType {
   updatedAt       DateTime      @updatedAt
   availability    Availability?
   appointments    Appointment[]
+  slotStaff       SlotStaff[]
 }
 
 model Availability {
@@ -82,8 +84,42 @@ model Appointment {
   videoLink     String?   // Lien visio généré automatiquement pour les rendez-vous en distanciel
   status        String    @default("pending") // pending, confirmed, cancelled, completed
   reminderSentAt DateTime? // rappel J-1 envoyé par email
+  staff         StaffMember[] // responsables présents à ce rendez-vous (entretiens)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+}
+
+// Responsable (ex. d'un pôle) qui assiste aux entretiens. Pas de compte : il reçoit les invitations par email.
+model StaffMember {
+  id           String        @id @default(cuid())
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name         String
+  email        String
+  role         String?       // pôle ou rôle, affiché à côté du nom
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  appointments Appointment[]
+  slots        SlotStaff[]
+
+  @@unique([userId, email])
+}
+
+// Responsables prévus sur une plage horaire d'un type de rendez-vous (date + heures de la plage).
+// Chaque rendez-vous pris dans cette plage reprend ces responsables.
+model SlotStaff {
+  id            String      @id @default(cuid())
+  eventTypeId   String
+  eventType     EventType   @relation(fields: [eventTypeId], references: [id], onDelete: Cascade)
+  date          String      // YYYY-MM-DD
+  startTime     String      // HH:mm
+  endTime       String      // HH:mm
+  staffMemberId String
+  staffMember   StaffMember @relation(fields: [staffMemberId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
+
+  @@unique([eventTypeId, date, startTime, endTime, staffMemberId])
+  @@index([eventTypeId, date])
 }
 
 // Jetons à usage unique envoyés par email (vérification d'adresse, mot de passe oublié).

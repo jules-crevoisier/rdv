@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { CalendarDays, Inbox, LayoutGrid, LogOut, Plus, Users } from "lucide-react";
+import { CalendarDays, Inbox, LayoutGrid, LogOut, Plus, UserRoundCheck, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,6 +21,7 @@ const navigation = [
   { name: "Aujourd'hui", short: "Aujourd'hui", href: "/", icon: CalendarDays },
   { name: "Réservations", short: "Réservations", href: "/appointments", icon: Inbox },
   { name: "Types de rendez-vous", short: "Types", href: "/event-types", icon: LayoutGrid },
+  { name: "Responsables", short: "Équipe", href: "/staff", icon: UserRoundCheck },
   { name: "Clients", short: "Clients", href: "/clients", icon: Users },
 ];
 
@@ -144,7 +145,7 @@ export const MobileNav = () => {
       </header>
 
       <nav
-        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t bg-background/92 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t bg-background/92 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
         aria-label="Navigation principale"
       >
         {navigation.map((item) => {

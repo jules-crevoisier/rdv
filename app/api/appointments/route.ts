@@ -3,6 +3,7 @@ import { notifyAppointmentCreated } from "@/lib/email/appointment-emails";
 import { auth } from "@/auth";
 import { getPublicEventType, getAppointments } from "@/lib/db";
 import { prisma } from "@/lib/prisma";
+import { staffIdsForSlot } from "@/lib/staff";
 
 export async function GET(request: Request) {
   try {
@@ -103,6 +104,12 @@ export async function POST(request: Request) {
     // N'ajouter clientId que s'il est valide (non null et existe dans la DB)
     if (clientId) {
       appointmentData.clientId = clientId;
+    }
+
+    // Entretiens : les responsables prévus sur cette plage horaire assistent au rendez-vous
+    const staffIds = await staffIdsForSlot(eventTypeId, appointmentData.startTime, appointmentData.endTime);
+    if (staffIds.length > 0) {
+      appointmentData.staff = { connect: staffIds.map((id) => ({ id })) };
     }
 
     const appointment = await prisma.appointment.create({

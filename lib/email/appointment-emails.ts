@@ -9,6 +9,9 @@ import {
   bookingReminderTemplate,
   bookingRescheduledTemplate,
   newBookingForProTemplate,
+  staffCancelledTemplate,
+  staffInvitedTemplate,
+  staffRescheduledTemplate,
   type AppointmentForEmail,
 } from "./templates";
 
@@ -21,6 +24,7 @@ const load = (id: string) =>
     include: {
       eventType: { select: { id: true, name: true, duration: true } },
       user: { select: { name: true, email: true } },
+      staff: { select: { id: true, name: true, email: true }, orderBy: { name: "asc" } },
     },
   });
 
@@ -68,6 +72,43 @@ export const notifyAppointmentCreated = (appointmentId: string, request?: Reques
         idempotencyKey: `booking-pro/${a.id}`,
         tags: [{ name: "category", value: "booking_new" }],
       }),
+      // Les responsables ne sont invités qu'une fois le créneau confirmé
+      ...(a.status === "confirmed" ? a.staff.map((s) => sendStaffInvite(a, s)) : []),
+    ]);
+  });
+
+const staffSummary = (a: AppointmentForEmail) => `${a.eventType.name} : ${a.clientName}`;
+
+const sendStaffInvite = (a: Loaded, s: { id: string; name: string; email: string }) =>
+  sendEmail({
+    to: s.email,
+    replyTo: a.user.email,
+    ...staffInvitedTemplate(a, { staffName: s.name }),
+    attachments: [appointmentIcs(a, { summary: staffSummary(a) })],
+    idempotencyKey: `staff-invite/${a.id}/${s.id}/${a.startTime.getTime()}`,
+    tags: [{ name: "category", value: "staff_invited" }],
+  });
+
+const sendStaffCancel = (a: AppointmentForEmail, s: { name: string; email: string }, reason: "cancelled" | "removed") =>
+  sendEmail({
+    to: s.email,
+    replyTo: a.user.email,
+    ...staffCancelledTemplate(a, { staffName: s.name, reason }),
+    attachments: [appointmentIcs(a, { cancelled: true, summary: staffSummary(a) })],
+    tags: [{ name: "category", value: "staff_cancelled" }],
+  });
+
+/** L'organisateur change les responsables d'un rendez-vous : invitation aux nouveaux, annulation aux retirés. */
+export const notifyStaffChanged = (
+  appointmentId: string,
+  change: { added: string[]; removed: { name: string; email: string }[] }
+) =>
+  safe("responsables", async () => {
+    const a = await load(appointmentId);
+    if (!a || a.status !== "confirmed" || a.startTime < new Date()) return;
+    await Promise.all([
+      ...a.staff.filter((s) => change.added.includes(s.id)).map((s) => sendStaffInvite(a, s)),
+      ...change.removed.map((s) => sendStaffCancel(a, s, "removed")),
     ]);
   });
 
@@ -86,7 +127,10 @@ export const notifyAppointmentUpdated = (
     if (a.status === "cancelled" && previous.status !== "cancelled") {
       if (a.startTime < new Date()) return; // inutile de prévenir pour un créneau passé
       const t = bookingCancelledTemplate(a, { audience: "client", rebookUrl: u.rebook });
-      await sendEmail({ ...base, ...t, attachments: [appointmentIcs(a, { cancelled: true })], tags: [{ name: "category", value: "booking_cancelled" }] });
+      await Promise.all([
+        sendEmail({ ...base, ...t, attachments: [appointmentIcs(a, { cancelled: true })], tags: [{ name: "category", value: "booking_cancelled" }] }),
+        ...a.staff.map((s) => sendStaffCancel(a, s, "cancelled")),
+      ]);
       return;
     }
     if (a.status === "cancelled" || a.status === "completed") return;
@@ -94,19 +138,33 @@ export const notifyAppointmentUpdated = (
     if (a.startTime.getTime() !== previous.startTime.getTime()) {
       const t = bookingRescheduledTemplate(a, { previousStart: previous.startTime, manageUrl: u.manage });
       await prisma.appointment.update({ where: { id: a.id }, data: { reminderSentAt: null } });
-      await sendEmail({ ...base, ...t, attachments: [appointmentIcs(a)], tags: [{ name: "category", value: "booking_rescheduled" }] });
+      await Promise.all([
+        sendEmail({ ...base, ...t, attachments: [appointmentIcs(a)], tags: [{ name: "category", value: "booking_rescheduled" }] }),
+        ...a.staff.map((s) =>
+          sendEmail({
+            to: s.email,
+            replyTo: a.user.email,
+            ...staffRescheduledTemplate(a, { staffName: s.name, previousStart: previous.startTime }),
+            attachments: [appointmentIcs(a, { summary: staffSummary(a) })],
+            tags: [{ name: "category", value: "staff_rescheduled" }],
+          })
+        ),
+      ]);
       return;
     }
 
     if (a.status === "confirmed" && previous.status === "pending") {
       const t = bookingConfirmedTemplate(a, { manageUrl: u.manage });
-      await sendEmail({ ...base, ...t, attachments: [appointmentIcs(a)], tags: [{ name: "category", value: "booking_confirmed" }] });
+      await Promise.all([
+        sendEmail({ ...base, ...t, attachments: [appointmentIcs(a)], tags: [{ name: "category", value: "booking_confirmed" }] }),
+        ...a.staff.map((s) => sendStaffInvite(a, s)),
+      ]);
     }
   });
 
 /** Suppression d'un rendez-vous à venir : on prévient l'autre partie. */
 export const notifyAppointmentDeleted = (
-  snapshot: AppointmentForEmail & { eventType: { id: string; name: string; duration: number } },
+  snapshot: AppointmentForEmail & { eventType: { id: string; name: string; duration: number }; staff?: { name: string; email: string }[] },
   deletedBy: "pro" | "client",
   request?: Request
 ) =>
@@ -118,13 +176,16 @@ export const notifyAppointmentDeleted = (
       audience,
       rebookUrl: audience === "client" ? `${base}/book/${snapshot.eventType.id}` : `${base}/appointments`,
     });
-    await sendEmail({
-      to: audience === "client" ? snapshot.clientEmail : snapshot.user.email,
-      replyTo: audience === "client" ? snapshot.user.email : snapshot.clientEmail,
-      ...t,
-      attachments: [appointmentIcs(snapshot, { cancelled: true })],
-      tags: [{ name: "category", value: "booking_cancelled" }],
-    });
+    await Promise.all([
+      sendEmail({
+        to: audience === "client" ? snapshot.clientEmail : snapshot.user.email,
+        replyTo: audience === "client" ? snapshot.user.email : snapshot.clientEmail,
+        ...t,
+        attachments: [appointmentIcs(snapshot, { cancelled: true })],
+        tags: [{ name: "category", value: "booking_cancelled" }],
+      }),
+      ...(snapshot.staff ?? []).map((s) => sendStaffCancel(snapshot, s, "cancelled")),
+    ]);
   });
 
 /**
@@ -144,6 +205,7 @@ export const sendDueReminders = async (request?: Request) => {
     include: {
       eventType: { select: { id: true, name: true, duration: true } },
       user: { select: { name: true, email: true } },
+      staff: { select: { id: true, name: true, email: true }, orderBy: { name: "asc" } },
     },
     take: 200,
   });

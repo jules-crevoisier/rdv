@@ -60,6 +60,8 @@ export type AppointmentForEmail = {
   status: string;
   eventType: { name: string; duration: number };
   user: { name?: string | null; email: string };
+  /** Responsables présents (entretiens). */
+  staff?: { name: string; email: string }[];
 };
 
 const fmt = (date: Date, options: Intl.DateTimeFormatOptions) =>
@@ -94,6 +96,7 @@ const ticketRows = (a: AppointmentForEmail, audience: "client" | "pro"): TicketR
     rows.push({ label: "Lieu", value: a.location });
   }
   if (a.notes && audience === "pro") rows.push({ label: "Note", value: a.notes });
+  if (audience === "pro" && a.staff?.length) rows.push({ label: "Responsables", value: a.staff.map((s) => s.name).join(", ") });
   return rows;
 };
 
@@ -226,5 +229,52 @@ export const bookingReminderTemplate = (a: AppointmentForEmail, p: { manageUrl: 
     ],
     ticket: ticket(a, "client"),
     cta: { label: "Voir mon rendez-vous", url: p.manageUrl },
+  }),
+});
+
+// ---------- Responsables d'entretien ----------
+
+/** À un responsable ajouté sur un rendez-vous (à la réservation ou par l'organisateur). */
+export const staffInvitedTemplate = (a: AppointmentForEmail, p: { staffName: string }) => ({
+  subject: `Entretien : ${a.clientName}, ${formatWhen(a.startTime)}`,
+  ...renderEmail({
+    preheader: `Vous êtes attendu·e à « ${a.eventType.name} » avec ${a.clientName}.`,
+    heading: "Vous participez à un entretien",
+    paragraphs: [
+      `Bonjour ${p.staffName},`,
+      `${hostName(a)} vous a ajouté·e à l'entretien de ${a.clientName}. L'invitation est jointe pour l'ajouter à votre agenda.`,
+    ],
+    ticket: ticket(a, "pro"),
+    footnote: `Un empêchement ? Répondez à cet email pour prévenir ${hostName(a)}.`,
+  }),
+});
+
+/** À un responsable qui n'est plus attendu : rendez-vous annulé ou responsable retiré. */
+export const staffCancelledTemplate = (a: AppointmentForEmail, p: { staffName: string; reason: "cancelled" | "removed" }) => ({
+  subject: `${p.reason === "cancelled" ? "Annulé" : "Vous n'êtes plus attendu·e"} : entretien de ${a.clientName}, ${formatWhen(a.startTime)}`,
+  ...renderEmail({
+    preheader: p.reason === "cancelled" ? "Cet entretien est annulé." : "Vous avez été retiré·e de cet entretien.",
+    heading: p.reason === "cancelled" ? "Entretien annulé" : "Vous n'êtes plus attendu·e",
+    paragraphs: [
+      `Bonjour ${p.staffName},`,
+      p.reason === "cancelled"
+        ? `L'entretien de ${a.clientName} du ${formatWhen(a.startTime)} est annulé. L'invitation jointe le retire de votre agenda.`
+        : `${hostName(a)} vous a retiré·e de l'entretien de ${a.clientName} du ${formatWhen(a.startTime)}. L'invitation jointe le retire de votre agenda.`,
+    ],
+    ticket: { ...ticket(a, "pro"), stamp: { label: "Annulé", tone: "off" } },
+  }),
+});
+
+/** À un responsable, quand l'horaire de l'entretien change. */
+export const staffRescheduledTemplate = (a: AppointmentForEmail, p: { staffName: string; previousStart: Date }) => ({
+  subject: `Nouvel horaire : entretien de ${a.clientName}, ${formatWhen(a.startTime)}`,
+  ...renderEmail({
+    preheader: `L'entretien passe au ${formatWhen(a.startTime)}.`,
+    heading: "L'entretien change d'horaire",
+    paragraphs: [
+      `Bonjour ${p.staffName},`,
+      `L'entretien de ${a.clientName} passe du ${formatWhen(p.previousStart)} au ${formatWhen(a.startTime)}. L'invitation jointe met votre agenda à jour.`,
+    ],
+    ticket: ticket(a, "pro"),
   }),
 });

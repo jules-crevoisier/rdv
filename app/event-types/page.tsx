@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { Archive, CalendarClock, ChevronDown, Check, ExternalLink, Globe, Lock, MoreHorizontal, Pencil, Plus, Trash2, XCircle } from "lucide-react";
+import { Archive, CalendarClock, ChevronDown, Check, ExternalLink, Globe, Lock, MoreHorizontal, Pencil, Plus, Trash2, UserRoundCheck, XCircle } from "lucide-react";
 import { MainLayout } from "@/components/layout/main-layout";
 import { Button } from "@/components/ui/button";
 import {
@@ -393,6 +393,12 @@ export default function EventTypesPage() {
                       <Link href={`/event-types/${eventType.id}/availability`}>
                         <CalendarClock />
                         Horaires
+                      </Link>
+                    </Button>
+                    <Button asChild variant="outline" size="sm" className="flex-1">
+                      <Link href={`/event-types/${eventType.id}/staff`}>
+                        <UserRoundCheck />
+                        Équipe
                       </Link>
                     </Button>
                     <DropdownMenu>
