@@ -1,9 +1,9 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Check, ExternalLink, Mail, MapPin, MoreHorizontal, Phone, Trash2, Users, Video, X } from "lucide-react";
+import { Check, ExternalLink, Mail, MapPin, MessageSquare, MoreHorizontal, Phone, Trash2, Video, X } from "lucide-react";
 import { MainLayout } from "@/components/layout/main-layout";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -27,6 +27,9 @@ import { PageSkeleton } from "@/components/app/loading";
 import { EmptyState } from "@/components/app/empty-state";
 import { StatusPill } from "@/components/app/status";
 import { Ticket } from "@/components/app/ticket";
+import { StaffPicker } from "@/components/staff/staff-picker";
+import { AppointmentPanel } from "@/components/appointments/appointment-panel";
+import { useAppointmentStaff } from "@/components/appointments/use-appointment-staff";
 import { cn, formatDateTime } from "@/lib/utils";
 
 type AppointmentFromDB = {
@@ -50,6 +53,7 @@ type AppointmentFromDB = {
   videoLink?: string | null;
   status: string;
   staff?: { id: string; name: string }[];
+  _count?: { comments: number };
 };
 
 type Filter = "upcoming" | "pending" | "past" | "all";
@@ -76,6 +80,18 @@ function AppointmentsContent() {
   const [toDelete, setToDelete] = useState<AppointmentFromDB | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [openId, setOpenId] = useState<string | null>(null);
+
+  const patch = useCallback((id: string, change: Partial<AppointmentFromDB>) => {
+    setAppointments((list) => list.map((a) => (a.id === id ? { ...a, ...change } : a)));
+  }, []);
+  const team = useAppointmentStaff(
+    sessionStatus === "authenticated",
+    useCallback((id, staff) => patch(id, { staff }), [patch])
+  );
+  const myEmail = session?.user?.email?.toLowerCase();
+  const selfMember = team.directory.find((s) => s.email.toLowerCase() === myEmail);
+  const canAddSelf = (apt: AppointmentFromDB) => !selfMember || !(apt.staff ?? []).some((s) => s.id === selfMember.id);
 
   const reload = async () => {
     const response = await fetch("/api/appointments");
@@ -232,9 +248,9 @@ function AppointmentsContent() {
           )}
         </div>
 
-        {actionError && (
+        {(actionError || team.error) && (
           <p role="alert" className="rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
-            {actionError}
+            {actionError || team.error}
           </p>
         )}
 
@@ -275,12 +291,6 @@ function AppointmentsContent() {
                                   {apt.clientPhone}
                                 </a>
                               )}
-                              {own && apt.staff && apt.staff.length > 0 && (
-                                <span className="inline-flex items-center gap-1.5">
-                                  <Users className="size-3.5" />
-                                  {apt.staff.map((s) => s.name).join(", ")}
-                                </span>
-                              )}
                               {apt.location && (
                                 <span className="inline-flex items-center gap-1.5">
                                   <MapPin className="size-3.5" />
@@ -297,6 +307,23 @@ function AppointmentsContent() {
                             </div>
                             {apt.notes && (
                               <p className="max-w-prose border-l-2 pl-3 text-sm italic text-muted-foreground">{apt.notes}</p>
+                            )}
+                            {own && (
+                              <div className="flex flex-wrap items-center gap-x-3 gap-y-2 pt-1">
+                                <StaffPicker
+                                  staff={team.directory}
+                                  value={(apt.staff ?? []).map((s) => s.id)}
+                                  onChange={(ids) => team.assign(apt.id, ids, apt.staff ?? [])}
+                                  onAddSelf={canAddSelf(apt) ? () => team.addSelf(apt.id) : undefined}
+                                  disabled={team.busyId === apt.id}
+                                  label={`Choisir les responsables de l'entretien de ${apt.clientName}`}
+                                  emptyLabel="Personne pour l'entretien"
+                                />
+                                <Button variant="ghost" size="sm" className="h-7 px-2 text-muted-foreground" onClick={() => setOpenId(apt.id)}>
+                                  <MessageSquare />
+                                  {apt._count?.comments ? `${apt._count.comments} commentaire${apt._count.comments > 1 ? "s" : ""}` : "Commenter"}
+                                </Button>
+                              </div>
                             )}
                           </div>
 
@@ -350,6 +377,23 @@ function AppointmentsContent() {
           </div>
         )}
       </div>
+
+      {(() => {
+        const apt = appointments.find((a) => a.id === openId) ?? null;
+        return (
+          <AppointmentPanel
+            open={!!apt}
+            onOpenChange={(o) => !o && setOpenId(null)}
+            appointment={apt && { ...apt, eventTypeName: apt.eventType.name }}
+            directory={team.directory}
+            onAssign={apt ? (ids) => team.assign(apt.id, ids, apt.staff ?? []) : undefined}
+            onAddSelf={apt && canAddSelf(apt) ? () => team.addSelf(apt.id) : undefined}
+            busy={team.busyId === apt?.id}
+            error={team.error}
+            onCommentCount={(n) => apt && patch(apt.id, { _count: { comments: n } })}
+          />
+        );
+      })()}
 
       <Dialog open={!!toDelete} onOpenChange={(open) => !open && setToDelete(null)}>
         <DialogContent>

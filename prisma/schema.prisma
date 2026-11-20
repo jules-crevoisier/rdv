@@ -21,6 +21,7 @@ model User {
   eventTypes    EventType[]
   appointments  Appointment[]
   staffMembers  StaffMember[]
+  comments      AppointmentComment[]
 }
 
 model EventType {
@@ -85,6 +86,7 @@ model Appointment {
   status        String    @default("pending") // pending, confirmed, cancelled, completed
   reminderSentAt DateTime? // rappel J-1 envoyé par email
   staff         StaffMember[] // responsables présents à ce rendez-vous (entretiens)
+  comments      AppointmentComment[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -104,6 +106,21 @@ model StaffMember {
   slots        SlotStaff[]
 
   @@unique([userId, email])
+}
+
+// Commentaires internes sur un rendez-vous (ex. le pôle visé par le candidat).
+// Visibles par l'organisateur et les responsables placés sur le rendez-vous, jamais par le client.
+model AppointmentComment {
+  id            String      @id @default(cuid())
+  appointmentId String
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  authorId      String?
+  author        User?       @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  authorName    String      // gardé si le compte de l'auteur disparaît
+  body          String
+  createdAt     DateTime    @default(now())
+
+  @@index([appointmentId, createdAt])
 }
 
 // Responsables prévus sur une plage horaire d'un type de rendez-vous (date + heures de la plage).
