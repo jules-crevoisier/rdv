@@ -1,0 +1,13 @@
+# Construction locale des images (au lieu de les télécharger depuis ghcr.io) :
+#   docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
+services:
+  migrate:
+    build:
+      context: .
+      target: migrate
+    pull_policy: build
+  app:
+    build:
+      context: .
+      target: runner
+    pull_policy: build

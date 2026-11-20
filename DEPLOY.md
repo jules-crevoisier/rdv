@@ -28,6 +28,19 @@ Build type `Dockerfile`, port `3000`, mêmes variables. Les migrations ne sont a
 automatiquement : les lancer une fois par changement de schéma avec
 `docker build --target migrate -t rdv-migrate . && docker run --rm -e DATABASE_URL=... rdv-migrate`.
 
+## Build sur GitHub (CI)
+
+Le serveur n'a pas assez de mémoire pour compiler Next.js : à chaque push sur `master`, GitHub Actions
+(`.github/workflows/deploy.yml`) construit les images `ghcr.io/jules-crevoisier/rdv` et `rdv-migrate`, les publie,
+puis appelle l'API Dokploy (`compose.deploy`). Dokploy ne fait plus que télécharger les images et relancer.
+
+- Secrets du dépôt GitHub : `DOKPLOY_URL` (https://srko.fr), `DOKPLOY_API_KEY` (Dokploy > Settings > Profile > API),
+  `DOKPLOY_COMPOSE_ID` (id du compose rdv-app).
+- Dans Dokploy, désactiver l'**Autodeploy** du compose : c'est la CI qui déclenche le déploiement, une fois les images prêtes.
+- Les paquets ghcr.io doivent être **publics** (le dépôt l'est), sinon ajouter ghcr.io dans Dokploy > Registry.
+- Relancer à la main : onglet Actions > Build et déploiement > Run workflow.
+- Local : `docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build`.
+
 ## Emails (Resend)
 
 Les emails (confirmation d'adresse, mot de passe oublié, notifications et rappels de rendez-vous) partent via [Resend](https://resend.com).

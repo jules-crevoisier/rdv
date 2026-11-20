@@ -1,4 +1,6 @@
-# Déploiement Dokploy (type "Docker Compose") ou local : `docker compose up -d --build`
+# Déploiement Dokploy (type "Docker Compose"). Les images sont construites par GitHub Actions
+# (.github/workflows/deploy.yml) et publiées sur ghcr.io : le serveur ne compile plus rien.
+# En local, pour construire soi-même : docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
 # Variables à définir dans l'onglet Environment de Dokploy (ou un fichier .env) :
 #   DATABASE_URL=postgresql://user:password@host:5432/rdv
 #   AUTH_SECRET=<openssl rand -base64 32>
@@ -10,17 +12,15 @@
 #   AUTH_DISCORD_ID / AUTH_DISCORD_SECRET   (connexion Discord, facultatif)
 services:
   migrate:
-    build:
-      context: .
-      target: migrate
+    image: ${RDV_IMAGE:-ghcr.io/jules-crevoisier/rdv}-migrate:${RDV_TAG:-latest}
+    pull_policy: always
     environment:
       DATABASE_URL: ${DATABASE_URL:?DATABASE_URL manquant}
     restart: "no"
 
   app:
-    build:
-      context: .
-      target: runner
+    image: ${RDV_IMAGE:-ghcr.io/jules-crevoisier/rdv}:${RDV_TAG:-latest}
+    pull_policy: always
     environment:
       DATABASE_URL: ${DATABASE_URL:?DATABASE_URL manquant}
       AUTH_SECRET: ${AUTH_SECRET:?AUTH_SECRET manquant}
