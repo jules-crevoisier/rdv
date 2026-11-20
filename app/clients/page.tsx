@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { MainLayout } from "@/components/layout/main-layout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,21 +10,15 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Plus, Mail, Phone, User, Trash2, Edit } from "lucide-react";
-import { formatDate } from "@/lib/utils";
+import { Mail, Phone, Plus, Search, Trash2 } from "lucide-react";
+import { PageHeader } from "@/components/app/page-header";
+import { PageSkeleton } from "@/components/app/loading";
+import { EmptyState } from "@/components/app/empty-state";
 
 type Client = {
   id: string;
@@ -51,6 +44,9 @@ export default function ClientsPage() {
     phone: "",
   });
   const [error, setError] = useState("");
+  const [query, setQuery] = useState("");
+  const [toDelete, setToDelete] = useState<Client | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // Note: Cette page permet aux administrateurs de créer et gérer des comptes clients
   // Les clients peuvent ensuite se connecter pour voir leurs rendez-vous
@@ -119,272 +115,175 @@ export default function ClientsPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Êtes-vous sûr de vouloir supprimer ce client ?")) {
-      return;
-    }
-
+  const handleDelete = async () => {
+    if (!toDelete) return;
+    setDeleteError(null);
     try {
-      const response = await fetch(`/api/clients/${id}`, {
-        method: "DELETE",
-      });
-
+      const response = await fetch(`/api/clients/${toDelete.id}`, { method: "DELETE" });
       if (!response.ok) {
-        alert("Erreur lors de la suppression");
+        setDeleteError("La suppression n'a pas abouti.");
         return;
       }
-
+      setToDelete(null);
       fetchClients();
     } catch (error) {
       console.error("Error deleting client:", error);
-      alert("Une erreur est survenue");
+      setDeleteError("La suppression n'a pas abouti.");
     }
   };
 
   if (isLoading) {
     return (
       <MainLayout>
-        <div className="flex items-center justify-center py-12">
-          <p>Chargement...</p>
-        </div>
+        <PageSkeleton rows={5} />
       </MainLayout>
     );
   }
 
-  if (!session?.user) {
-    return (
-      <MainLayout>
-        <div className="flex items-center justify-center py-12">
-          <p>Vous devez être connecté pour accéder à cette page</p>
-        </div>
-      </MainLayout>
-    );
-  }
+  const q = query.trim().toLowerCase();
+  const filtered = q
+    ? clients.filter((c) => [c.name, c.email, c.phone].some((v) => v?.toLowerCase().includes(q)))
+    : clients;
+
+  const initials = (c: Client) =>
+    (c.name || c.email).split(/[\s@.]/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
 
   return (
     <MainLayout>
       <div className="space-y-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold">Gestion des clients</h1>
-            <p className="text-sm sm:text-base text-muted-foreground">
-              Créez et gérez les comptes clients. Les clients peuvent ensuite se connecter pour voir leurs rendez-vous et en prendre de nouveaux.
-            </p>
-          </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="w-full sm:w-auto">
-                <Plus className="mr-2 h-4 w-4" />
-                Nouveau client
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Créer un nouveau client</DialogTitle>
-                <DialogDescription>
-                  Créez un compte client. Un mot de passe temporaire sera défini.
-                </DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {error && (
-                  <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                    {error}
+        <PageHeader
+          eyebrow={`${clients.length} compte${clients.length > 1 ? "s" : ""} client`}
+          title="Clients"
+          description="Créez un compte pour un client : il retrouve ses rendez-vous et réserve plus vite."
+          actions={
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus />
+                  Ajouter un client
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Ajouter un client</DialogTitle>
+                  <DialogDescription>Le client se connecte avec cet e-mail et ce mot de passe provisoire.</DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  {error && (
+                    <p role="alert" className="rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                      {error}
+                    </p>
+                  )}
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Nom et prénom</Label>
+                    <Input id="name" autoComplete="off" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} disabled={isSubmitting} />
                   </div>
-                )}
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email *</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="client@example.com"
-                    required
-                    disabled={isSubmitting}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Mot de passe temporaire *</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    placeholder="••••••••"
-                    required
-                    minLength={6}
-                    disabled={isSubmitting}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Le client pourra changer ce mot de passe après sa première connexion
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nom complet</Label>
-                  <Input
-                    id="name"
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Nom du client"
-                    disabled={isSubmitting}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Téléphone</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    placeholder="+33 6 12 34 56 78"
-                    disabled={isSubmitting}
-                  />
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsDialogOpen(false)}
-                    disabled={isSubmitting}
-                  >
-                    Annuler
-                  </Button>
-                  <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? "Création..." : "Créer le client"}
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
-        </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">E-mail</Label>
+                    <Input id="email" type="email" autoComplete="off" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} required disabled={isSubmitting} />
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="password">Mot de passe provisoire</Label>
+                      <Input id="password" type="password" autoComplete="new-password" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} required minLength={6} disabled={isSubmitting} />
+                      <p className="text-xs text-muted-foreground">6 caractères minimum.</p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">
+                        Téléphone <span className="font-normal text-muted-foreground">(facultatif)</span>
+                      </Label>
+                      <Input id="phone" type="tel" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} disabled={isSubmitting} />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} disabled={isSubmitting}>
+                      Annuler
+                    </Button>
+                    <Button type="submit" disabled={isSubmitting}>
+                      {isSubmitting ? "Création…" : "Créer le compte"}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          }
+        />
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Liste des clients</CardTitle>
-            <CardDescription>
-              {clients.length} client{clients.length > 1 ? "s" : ""} au total
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {clients.length === 0 ? (
-              <div className="py-8 text-center">
-                <p className="text-muted-foreground">Aucun client enregistré</p>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Créez votre premier client pour commencer
-                </p>
-              </div>
-            ) : (
-              <>
-                {/* Desktop Table */}
-                <div className="hidden md:block overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Nom</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Téléphone</TableHead>
-                        <TableHead>Rendez-vous</TableHead>
-                        <TableHead>Date de création</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {clients.map((client) => (
-                        <TableRow key={client.id}>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <User className="h-4 w-4 text-muted-foreground" />
-                              {client.name || "Sans nom"}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Mail className="h-4 w-4 text-muted-foreground" />
-                              <span className="truncate max-w-[200px]">{client.email}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            {client.phone ? (
-                              <div className="flex items-center gap-2">
-                                <Phone className="h-4 w-4 text-muted-foreground" />
-                                <span className="truncate max-w-[150px]">{client.phone}</span>
-                              </div>
-                            ) : (
-                              <span className="text-muted-foreground">-</span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="secondary">{client._count.appointments}</Badge>
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {formatDate(client.createdAt)}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDelete(client.id)}
-                              className="text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-                {/* Mobile Cards */}
-                <div className="md:hidden space-y-4">
-                  {clients.map((client) => (
-                    <Card key={client.id}>
-                      <CardContent className="pt-6">
-                        <div className="space-y-3">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <User className="h-4 w-4 text-muted-foreground" />
-                                <p className="font-medium">{client.name || "Sans nom"}</p>
-                              </div>
-                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <Mail className="h-3 w-3" />
-                                <span className="truncate">{client.email}</span>
-                              </div>
-                              {client.phone && (
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-                                  <Phone className="h-3 w-3" />
-                                  <span>{client.phone}</span>
-                                </div>
-                              )}
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDelete(client.id)}
-                              className="text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                          <div className="flex items-center justify-between pt-2 border-t">
-                            <div className="flex items-center gap-2">
-                              <Badge variant="secondary">{client._count.appointments} rendez-vous</Badge>
-                            </div>
-                            <span className="text-xs text-muted-foreground">
-                              {formatDate(client.createdAt)}
-                            </span>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
+        {clients.length === 0 ? (
+          <EmptyState
+            title="Aucun client pour l'instant"
+            description="Les personnes qui réservent sans compte restent dans vos réservations. Ajoutez ici celles qui reviennent souvent."
+          />
+        ) : (
+          <div className="space-y-4">
+            <div className="relative max-w-sm">
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Rechercher un nom, un e-mail…"
+                aria-label="Rechercher un client"
+                className="pl-10"
+              />
+            </div>
+
+            <ul className="divide-y overflow-hidden rounded-xl border bg-card">
+              {filtered.map((client) => (
+                <li key={client.id} className="flex items-center gap-4 px-4 py-3.5 sm:px-5">
+                  <span className="grid size-10 shrink-0 place-items-center rounded-full bg-muted text-xs font-medium" aria-hidden="true">
+                    {initials(client)}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium">{client.name || client.email}</p>
+                    <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-sm text-muted-foreground">
+                      <a href={`mailto:${client.email}`} className="inline-flex min-w-0 items-center gap-1.5 hover:text-foreground">
+                        <Mail className="size-3.5 shrink-0" />
+                        <span className="truncate">{client.email}</span>
+                      </a>
+                      {client.phone && (
+                        <a href={`tel:${client.phone}`} className="inline-flex items-center gap-1.5 hover:text-foreground">
+                          <Phone className="size-3.5" />
+                          {client.phone}
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                  <div className="hidden text-right sm:block">
+                    <p className="text-sm font-medium tnum">{client._count.appointments}</p>
+                    <p className="text-xs text-muted-foreground">rendez-vous</p>
+                  </div>
+                  <p className="hidden w-28 text-right text-xs text-muted-foreground lg:block">
+                    depuis {new Date(client.createdAt).toLocaleDateString("fr-FR", { month: "short", year: "numeric" })}
+                  </p>
+                  <Button variant="ghost" size="icon-sm" onClick={() => setToDelete(client)} aria-label={`Supprimer ${client.name || client.email}`}>
+                    <Trash2 />
+                  </Button>
+                </li>
+              ))}
+              {filtered.length === 0 && <li className="px-5 py-8 text-center text-sm text-muted-foreground">Aucun client ne correspond à « {query} ».</li>}
+            </ul>
+          </div>
+        )}
       </div>
+
+      <Dialog open={!!toDelete} onOpenChange={(open) => !open && setToDelete(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Supprimer le compte de {toDelete?.name || toDelete?.email} ?</DialogTitle>
+            <DialogDescription>Le client ne pourra plus se connecter. Ses rendez-vous restent dans votre agenda.</DialogDescription>
+          </DialogHeader>
+          {deleteError && <p role="alert" className="text-sm text-destructive">{deleteError}</p>}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setToDelete(null)}>
+              Garder
+            </Button>
+            <Button variant="destructive" onClick={handleDelete}>
+              Supprimer le compte
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 }

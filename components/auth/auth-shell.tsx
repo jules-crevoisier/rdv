@@ -1,37 +1,28 @@
-import Link from "next/link";
-import { CalendarCheck } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Brand } from "@/components/app/brand";
 
-// Même API que l'AuthShell de la refonte UI (title, description, children) :
-// le fichier de la refonte pourra remplacer celui-ci sans toucher aux pages.
 type AuthShellProps = {
+  children: React.ReactNode;
+  /** h1 de la page, au-dessus du formulaire */
   title: string;
   description?: string;
-  children: React.ReactNode;
+  /** Conservés pour compatibilité, plus affichés */
+  headline?: string;
+  lead?: string;
 };
 
-/** Cadre commun des écrans de compte (mot de passe oublié, confirmation d'email...). */
-export const AuthShell = ({ title, description, children }: AuthShellProps) => (
-  <main className="flex min-h-dvh items-center justify-center bg-background px-4 py-10">
-    <div className="w-full max-w-md space-y-6">
-      <Link
-        href="/"
-        className="mx-auto flex w-fit items-center gap-2 rounded-md text-sm font-semibold tracking-tight outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-      >
-        <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-          <CalendarCheck className="size-4" aria-hidden />
-        </span>
-        Reservy
-      </Link>
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl tracking-tight">
-            <h1>{title}</h1>
-          </CardTitle>
-          {description ? <CardDescription className="leading-relaxed">{description}</CardDescription> : null}
-        </CardHeader>
-        <CardContent>{children}</CardContent>
-      </Card>
+/* Page de connexion simple et centrée, façon shadcn/ui. */
+export const AuthShell = ({ children, title, description }: AuthShellProps) => (
+  <div className="flex min-h-dvh flex-col items-center justify-center bg-muted/40 px-4 py-10">
+    <Brand className="mb-6" />
+    <div className="w-full max-w-sm rounded-xl border bg-card p-6 shadow-sm enter sm:p-8">
+      <div className="mb-6 space-y-1 text-center">
+        <h1 className="text-xl">{title}</h1>
+        {description && <p className="text-sm text-muted-foreground">{description}</p>}
+      </div>
+      {/* Les formulaires existants gardent leur Card : on l'aplatit ici, sans toucher à leur logique */}
+      <div className="[&_[data-slot=card-content]]:px-0 [&_[data-slot=card-header]]:hidden [&_[data-slot=card]]:border-0 [&_[data-slot=card]]:bg-transparent [&_[data-slot=card]]:py-0 [&_[data-slot=card]]:shadow-none">
+        {children}
+      </div>
     </div>
-  </main>
+  </div>
 );

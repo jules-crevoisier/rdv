@@ -52,3 +52,4 @@ dev.db-journal
 # tasteskill (état de build local)
 .taste/
 .taste-skill/
+.taste-skill/
