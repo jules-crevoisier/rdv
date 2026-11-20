@@ -28,6 +28,7 @@ export const StaffPicker = ({
   label,
   emptyLabel = "Aucun responsable",
   onAddSelf,
+  unavailableIds = [],
 }: {
   staff: StaffMember[];
   value: string[];
@@ -37,7 +38,10 @@ export const StaffPicker = ({
   emptyLabel?: string;
   /** Affiche « Me placer sur cet entretien » (l'organisateur se met lui-même en responsable). */
   onAddSelf?: () => void;
+  /** Responsables qui ont indiqué ne pas être disponibles (signalés, toujours sélectionnables). */
+  unavailableIds?: string[];
 }) => {
+  const off = (id: string) => unavailableIds.includes(id);
   const selected = staff.filter((s) => value.includes(s.id));
   const toggle = (id: string, on: boolean) => onChange(on ? [...value, id] : value.filter((v) => v !== id));
 
@@ -49,14 +53,18 @@ export const StaffPicker = ({
         selected.map((s) => (
           <span
             key={s.id}
-            title={s.email}
-            className="inline-flex h-7 max-w-full items-center gap-1.5 rounded-full border bg-background pl-1 pr-2.5 text-xs font-medium"
+            title={off(s.id) ? `${s.email} · a indiqué ne pas être disponible` : s.email}
+            className={cn(
+              "inline-flex h-7 max-w-full items-center gap-1.5 rounded-full border bg-background pl-1 pr-2.5 text-xs font-medium",
+              off(s.id) && "border-warning/50 bg-warning/8"
+            )}
           >
             <span className="grid size-5 shrink-0 place-items-center rounded-full bg-muted text-[0.625rem]" aria-hidden="true">
               {staffInitials(s.name)}
             </span>
             <span className="truncate">{s.name}</span>
             {s.role && <span className="hidden truncate font-normal text-muted-foreground sm:inline">{s.role}</span>}
+            {off(s.id) && <span className="shrink-0 font-normal text-warning">pas dispo</span>}
           </span>
         ))
       )}
@@ -85,10 +93,11 @@ export const StaffPicker = ({
               onCheckedChange={(on) => toggle(s.id, on === true)}
               onSelect={(e) => e.preventDefault()}
             >
-              <span className="min-w-0">
+              <span className="min-w-0 flex-1">
                 <span className="block truncate">{s.name}</span>
                 {s.role && <span className="block truncate text-xs text-muted-foreground">{s.role}</span>}
               </span>
+              {off(s.id) && <span className="shrink-0 text-xs text-warning">Pas dispo</span>}
             </DropdownMenuCheckboxItem>
           ))}
           <DropdownMenuSeparator />

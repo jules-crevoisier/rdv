@@ -1,5 +1,5 @@
 import { after, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { getWorkspace } from "@/lib/workspace";
 import { prisma } from "@/lib/prisma";
 import { inPlage, localDateKey, ownStaffIds, plageKey, plagesOf, setAppointmentStaff } from "@/lib/staff";
 import { notifyStaffChanged } from "@/lib/email/appointment-emails";
@@ -14,16 +14,17 @@ const loadOwned = (id: string, userId: string) =>
   });
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  const ws = await getWorkspace();
+  if (!ws) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   const { id } = await params;
 
-  const eventType = await loadOwned(id, session.user.id);
+  const eventType = await loadOwned(id, ws.ownerId);
   if (!eventType) return NextResponse.json({ error: "Non trouvé" }, { status: 404 });
 
   const today = localDateKey(new Date());
-  const [assignments, appointments] = await Promise.all([
+  const [assignments, unavailable, appointments] = await Promise.all([
     prisma.slotStaff.findMany({ where: { eventTypeId: id, date: { gte: today } }, select: { date: true, startTime: true, endTime: true, staffMemberId: true } }),
+    prisma.staffUnavailability.findMany({ where: { eventTypeId: id, date: { gte: today } }, select: { date: true, startTime: true, endTime: true, staffMemberId: true } }),
     prisma.appointment.findMany({
       where: { eventTypeId: id, status: { not: "cancelled" }, startTime: { gte: new Date(`${today}T00:00:00`) } },
       orderBy: { startTime: "asc" },
@@ -44,12 +45,19 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     const key = plageKey(a);
     byPlage.set(key, [...(byPlage.get(key) ?? []), a.staffMemberId]);
   }
+  // Responsables qui ont indiqué ne pas être disponibles sur la plage
+  const offByPlage = new Map<string, string[]>();
+  for (const u of unavailable) {
+    const key = plageKey(u);
+    offByPlage.set(key, [...(offByPlage.get(key) ?? []), u.staffMemberId]);
+  }
 
   const plages = plagesOf(eventType.availability?.dateOverrides)
     .filter((p) => p.date >= today)
     .map((p) => ({
       ...p,
       staffIds: byPlage.get(plageKey(p)) ?? [],
+      unavailableIds: offByPlage.get(plageKey(p)) ?? [],
       appointments: appointments
         .filter((a) => inPlage(p, a.startTime, a.endTime))
         .map((a) => ({ ...a, staffIds: a.staff.map((s) => s.id), staff: undefined })),
@@ -70,11 +78,11 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
  * les responsables ajoutés y sont invités, les retirés en sont retirés (les ajouts faits à la main restent).
  */
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  const ws = await getWorkspace();
+  if (!ws) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   const { id } = await params;
 
-  const eventType = await loadOwned(id, session.user.id);
+  const eventType = await loadOwned(id, ws.ownerId);
   if (!eventType) return NextResponse.json({ error: "Non trouvé" }, { status: 404 });
 
   const body = await request.json().catch(() => ({}));
@@ -83,7 +91,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   );
   if (!plage) return NextResponse.json({ error: "Cette plage n'existe plus. Rechargez la page." }, { status: 404 });
 
-  const staffIds = await ownStaffIds(session.user.id, body.staffIds);
+  const staffIds = await ownStaffIds(ws.ownerId, body.staffIds);
   if (!staffIds) return NextResponse.json({ error: "Responsable inconnu" }, { status: 400 });
 
   const where = { eventTypeId: id, date: plage.date, startTime: plage.startTime, endTime: plage.endTime };

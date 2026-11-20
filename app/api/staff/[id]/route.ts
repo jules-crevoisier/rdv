@@ -1,18 +1,18 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { getWorkspace } from "@/lib/workspace";
 import { prisma } from "@/lib/prisma";
 import { readStaffBody } from "@/lib/staff";
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  const ws = await getWorkspace();
+  if (!ws) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   const { id } = await params;
 
   const parsed = readStaffBody(await request.json().catch(() => ({})));
   if ("error" in parsed) return NextResponse.json({ error: parsed.error }, { status: 400 });
 
   try {
-    const { count } = await prisma.staffMember.updateMany({ where: { id, userId: session.user.id }, data: parsed.data });
+    const { count } = await prisma.staffMember.updateMany({ where: { id, userId: ws.ownerId }, data: parsed.data });
     if (count === 0) return NextResponse.json({ error: "Responsable introuvable" }, { status: 404 });
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -25,10 +25,10 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  const ws = await getWorkspace();
+  if (!ws) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   const { id } = await params;
-  const { count } = await prisma.staffMember.deleteMany({ where: { id, userId: session.user.id } });
+  const { count } = await prisma.staffMember.deleteMany({ where: { id, userId: ws.ownerId } });
   if (count === 0) return NextResponse.json({ error: "Responsable introuvable" }, { status: 404 });
   return NextResponse.json({ success: true });
 }

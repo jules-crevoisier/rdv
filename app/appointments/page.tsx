@@ -2,6 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
+import { useWorkspace } from "@/components/workspace/use-workspace";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Check, ExternalLink, Mail, MapPin, MessageSquare, MoreHorizontal, Phone, Trash2, Video, X } from "lucide-react";
 import { MainLayout } from "@/components/layout/main-layout";
@@ -70,6 +71,7 @@ const dayLabel = (d: Date) => {
 
 function AppointmentsContent() {
   const { data: session, status: sessionStatus } = useSession();
+  const { workspace } = useWorkspace();
   const router = useRouter();
   const searchParams = useSearchParams();
   const initial = searchParams.get("tab") as Filter | null;
@@ -163,7 +165,8 @@ function AppointmentsContent() {
     }
   };
 
-  const isOwner = (apt: AppointmentFromDB) => apt.userId === session?.user?.id;
+  // Rendez-vous reçus dans l'espace géré : le sien ou celui de l'équipe d'organisation ouverte.
+  const isOwner = (apt: AppointmentFromDB) => apt.userId === (workspace?.ownerId ?? session?.user?.id);
   const isClient = (apt: AppointmentFromDB) =>
     apt.clientId === session?.user?.id || apt.clientEmail === session?.user?.email;
 
@@ -181,7 +184,7 @@ function AppointmentsContent() {
       all: [...base].sort((a, b) => -byStartAsc(a, b)),
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appointments, scope, session]);
+  }, [appointments, scope, session, workspace]);
 
   const groups = useMemo(() => {
     const map = new Map<string, AppointmentFromDB[]>();

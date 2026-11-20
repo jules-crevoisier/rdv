@@ -1,5 +1,5 @@
 import { after, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { getWorkspace } from "@/lib/workspace";
 import { getAppointment, updateAppointment, deleteAppointment } from "@/lib/db";
 import { prisma } from "@/lib/prisma";
 import { notifyAppointmentDeleted, notifyAppointmentUpdated } from "@/lib/email/appointment-emails";
@@ -9,13 +9,13 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const ws = await getWorkspace();
+    if (!ws) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }
 
     const { id } = await params;
-    const appointment = await getAppointment(id, session.user.id);
+    const appointment = await getAppointment(id, ws.ownerId);
 
     if (!appointment) {
       return NextResponse.json({ error: "Rendez-vous non trouvé" }, { status: 404 });
@@ -33,8 +33,8 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const ws = await getWorkspace();
+    if (!ws) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }
 
@@ -42,11 +42,11 @@ export async function PUT(
     const body = await request.json();
 
     const previous = await prisma.appointment.findFirst({
-      where: { id, userId: session.user.id },
+      where: { id, userId: ws.ownerId },
       select: { status: true, startTime: true },
     });
 
-    const result = await updateAppointment(id, session.user.id, {
+    const result = await updateAppointment(id, ws.ownerId, {
       status: body.status,
       startTime: body.startTime ? new Date(body.startTime) : undefined,
       endTime: body.endTime ? new Date(body.endTime) : undefined,
@@ -68,8 +68,8 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const ws = await getWorkspace();
+    if (!ws) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }
 
@@ -83,7 +83,7 @@ export async function DELETE(
         staff: { select: { name: true, email: true } },
       },
     });
-    const result = await deleteAppointment(id, session.user.id, session.user.email || undefined);
+    const result = await deleteAppointment(id, ws.ownerId, ws.actorEmail || undefined);
 
     // Vérifier si un rendez-vous a été supprimé
     if (result.count === 0) {
@@ -91,7 +91,7 @@ export async function DELETE(
     }
 
     if (snapshot) {
-      const deletedBy = snapshot.userId === session.user.id ? "pro" : "client";
+      const deletedBy = snapshot.userId === ws.ownerId ? "pro" : "client";
       after(() => notifyAppointmentDeleted(snapshot, deletedBy, request));
     }
 

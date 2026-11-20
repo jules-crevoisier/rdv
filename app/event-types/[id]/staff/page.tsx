@@ -24,7 +24,7 @@ type Booked = {
   status: string;
   staffIds: string[];
 };
-type Plage = { date: string; startTime: string; endTime: string; staffIds: string[]; appointments: Booked[] };
+type Plage = { date: string; startTime: string; endTime: string; staffIds: string[]; unavailableIds: string[]; appointments: Booked[] };
 type Planning = {
   eventType: { id: string; name: string; duration: number; color: string; status: string };
   plages: Plage[];
@@ -129,7 +129,7 @@ export default function InterviewPlanningPage() {
   const bookedCount = plages.reduce((n, p) => n + p.appointments.length, 0) + outside.length;
   const uncovered = plages.filter((p) => p.staffIds.length === 0).length;
 
-  const bookedRow = (a: Booked) => (
+  const bookedRow = (a: Booked, unavailableIds: string[] = []) => (
     <li key={a.id} className="flex flex-col gap-2 py-2.5 sm:flex-row sm:items-center sm:gap-4">
       <div className="flex min-w-0 items-center gap-3 sm:w-72 sm:shrink-0">
         <span className="w-12 shrink-0 text-sm font-medium tnum">{formatTime(a.startTime)}</span>
@@ -145,6 +145,7 @@ export default function InterviewPlanningPage() {
           value={a.staffIds}
           onChange={(ids) => setBookedStaff(a, ids)}
           disabled={saving === a.id}
+          unavailableIds={unavailableIds}
           label={`Responsables de l'entretien de ${a.clientName}`}
         />
       </div>
@@ -258,10 +259,17 @@ export default function InterviewPlanningPage() {
                               disabled={saving === plageKey(p) || staff.length === 0}
                               label={`Responsables de la plage ${p.startTime} – ${p.endTime}`}
                               emptyLabel="Aucun responsable sur cette plage"
+                              unavailableIds={p.unavailableIds}
                             />
                           </div>
+                          {p.unavailableIds.length > 0 && (
+                            <p className="mt-2 text-xs text-muted-foreground sm:pl-76">
+                              <span className="text-warning">Pas disponibles :</span>{" "}
+                              {staff.filter((s) => p.unavailableIds.includes(s.id)).map((s) => s.name).join(", ")}
+                            </p>
+                          )}
                           {p.appointments.length > 0 && (
-                            <ul className="mt-3 divide-y border-t border-dashed">{p.appointments.map(bookedRow)}</ul>
+                            <ul className="mt-3 divide-y border-t border-dashed">{p.appointments.map((a) => bookedRow(a, p.unavailableIds))}</ul>
                           )}
                         </li>
                       ))}
@@ -276,7 +284,7 @@ export default function InterviewPlanningPage() {
           <section className="space-y-2" aria-labelledby="outside">
             <h2 id="outside" className="text-base font-medium">Hors des plages actuelles</h2>
             <p className="text-sm text-muted-foreground">Ces entretiens ont été pris sur une plage modifiée depuis.</p>
-            <ul className="divide-y rounded-xl border bg-card px-4 sm:px-5">{outside.map(bookedRow)}</ul>
+            <ul className="divide-y rounded-xl border bg-card px-4 sm:px-5">{outside.map((a) => bookedRow(a))}</ul>
           </section>
         )}
       </div>

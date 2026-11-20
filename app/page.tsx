@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
+import { spaceName, useWorkspace } from "@/components/workspace/use-workspace";
 import Link from "next/link";
 import { ArrowRight, CalendarSync, ChevronLeft, ChevronRight, MessageSquare, Plus, RefreshCw, Users } from "lucide-react";
 import { MainLayout } from "@/components/layout/main-layout";
@@ -56,6 +57,7 @@ const longDate = (d: Date) => d.toLocaleDateString("fr-FR", { weekday: "long", d
 
 export default function DashboardPage() {
   const { data: session, status: sessionStatus } = useSession();
+  const { workspace } = useWorkspace();
   const [eventTypes, setEventTypes] = useState<EventTypeFromDB[]>([]);
   const [appointments, setAppointments] = useState<AppointmentFromDB[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -132,7 +134,8 @@ export default function DashboardPage() {
     }
   };
 
-  const isOwner = (apt: AppointmentFromDB) => apt.userId === session?.user?.id;
+  // Rendez-vous reçus dans l'espace géré : le sien ou celui de l'équipe d'organisation ouverte.
+  const isOwner = (apt: AppointmentFromDB) => apt.userId === (workspace?.ownerId ?? session?.user?.id);
   const isClient = (apt: AppointmentFromDB) =>
     apt.clientId === session?.user?.id || apt.clientEmail === session?.user?.email;
 
@@ -179,7 +182,7 @@ export default function DashboardPage() {
     <MainLayout>
       <div className="space-y-6">
         <PageHeader
-          eyebrow={longDate(now)}
+          eyebrow={workspace && !workspace.isOwner ? `${longDate(now)} · espace ${spaceName(workspace.current)}` : longDate(now)}
           title={firstName ? `Bonjour ${firstName}` : "Tableau de bord"}
           description={summary}
           actions={

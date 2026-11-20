@@ -1,19 +1,19 @@
 import { after, NextResponse } from "next/server";
 import { notifyAppointmentCreated } from "@/lib/email/appointment-emails";
-import { auth } from "@/auth";
+import { getWorkspace } from "@/lib/workspace";
 import { getPublicEventType, getAppointments } from "@/lib/db";
 import { prisma } from "@/lib/prisma";
 import { staffIdsForSlot } from "@/lib/staff";
 
 export async function GET(request: Request) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const ws = await getWorkspace();
+    if (!ws) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }
 
     // Passer aussi l'email pour rechercher les rendez-vous par email
-    const appointments = await getAppointments(session.user.id, session.user.email || undefined);
+    const appointments = await getAppointments(ws.ownerId, ws.actorEmail || undefined);
     return NextResponse.json(appointments);
   } catch (error) {
     console.error("Error fetching appointments:", error);

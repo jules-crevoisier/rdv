@@ -1,5 +1,5 @@
 import { after, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { getWorkspace } from "@/lib/workspace";
 import { prisma } from "@/lib/prisma";
 import { readStaffBody } from "@/lib/staff";
 import { sendStaffWelcome } from "@/lib/email/staff-emails";
@@ -7,11 +7,11 @@ import { sendStaffWelcome } from "@/lib/email/staff-emails";
 // Annuaire des responsables d'entretien de l'organisateur connecté.
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  const ws = await getWorkspace();
+  if (!ws) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
 
   const staff = await prisma.staffMember.findMany({
-    where: { userId: session.user.id },
+    where: { userId: ws.ownerId },
     orderBy: [{ role: "asc" }, { name: "asc" }],
     include: {
       _count: { select: { appointments: { where: { status: { not: "cancelled" }, startTime: { gte: new Date() } } } } },
@@ -23,16 +23,17 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  const ws = await getWorkspace();
+  if (!ws) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
 
   const parsed = readStaffBody(await request.json().catch(() => ({})));
   if ("error" in parsed) return NextResponse.json({ error: parsed.error }, { status: 400 });
 
   try {
-    const staff = await prisma.staffMember.create({ data: { userId: session.user.id, ...parsed.data } });
+    const staff = await prisma.staffMember.create({ data: { userId: ws.ownerId, ...parsed.data } });
     // Invitation : le responsable apprend qu'il est dans l'équipe et peut créer son compte.
-    const hostId = session.user.id;
+    // Elle part au nom de la personne qui l'ajoute (organisateur ou co-organisateur).
+    const hostId = ws.actorId;
     after(async () => {
       const host = await prisma.user.findUnique({ where: { id: hostId }, select: { name: true, email: true } });
       // Pas d'invitation quand l'organisateur s'ajoute lui-même.
