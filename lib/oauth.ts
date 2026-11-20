@@ -20,7 +20,13 @@ export const oauthProviders = () => {
   }
   if (process.env.AUTH_DISCORD_ID && process.env.AUTH_DISCORD_SECRET) {
     providers.push(
-      Discord({ clientId: process.env.AUTH_DISCORD_ID, clientSecret: process.env.AUTH_DISCORD_SECRET })
+      Discord({
+        clientId: process.env.AUTH_DISCORD_ID,
+        clientSecret: process.env.AUTH_DISCORD_SECRET,
+        // Discord renvoie désormais « iss » au retour (RFC 9207). Sans issuer déclaré, Auth.js attend
+        // « https://authjs.dev » et refuse la connexion (CallbackRouteError, error=Configuration).
+        issuer: "https://discord.com",
+      })
     );
   }
   return providers;
