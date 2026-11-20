@@ -1,6 +1,8 @@
 // Réglages globaux lus depuis l'environnement (voir .env.example).
 
-export const APP_NAME = process.env.APP_NAME || "Reservy";
+// Nom affiché dans les emails. Pas APP_NAME : Dokploy remplit déjà cette variable
+// avec le nom technique du service (ex. « rdv-app-bze2iz-fwe3s9 »).
+export const APP_NAME = process.env.BRAND_NAME || "Reservy";
 
 /** Fuseau utilisé pour écrire les dates dans les emails (le serveur tourne en UTC). */
 export const APP_TIMEZONE = process.env.APP_TIMEZONE || "Europe/Paris";
