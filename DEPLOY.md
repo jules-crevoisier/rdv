@@ -57,6 +57,29 @@ les heures. Dans Dokploy : **Schedules** (sur le compose, service `app`) → cro
 wget -qO- --header="Authorization: Bearer $CRON_SECRET" http://127.0.0.1:3000/api/cron/reminders
 ```
 
+## Connexion Google et Discord
+
+Les boutons « Google » et « Discord » n'apparaissent que si leurs deux variables sont définies. Les comptes sont
+retrouvés par email (adresse vérifiée chez le fournisseur) ou créés sans mot de passe ; « Mot de passe oublié »
+permet d'en ajouter un plus tard.
+
+1. **Google** : [Google Cloud Console](https://console.cloud.google.com/) → APIs & Services → OAuth consent screen
+   (External, publié en production), puis Credentials → Create credentials → OAuth client ID → *Web application*.
+   - Authorized JavaScript origins : `https://rdv.srko.fr`
+   - Authorized redirect URIs : `https://rdv.srko.fr/api/auth/callback/google` et `https://rdv.srko.fr/api/auth/client/callback/google`
+2. **Discord** : [Developer Portal](https://discord.com/developers/applications) → New Application → OAuth2.
+   - Redirects : `https://rdv.srko.fr/api/auth/callback/discord` et `https://rdv.srko.fr/api/auth/client/callback/discord`
+3. Dans Dokploy, onglet **Environment** du compose, ajouter puis redéployer :
+   ```
+   AUTH_GOOGLE_ID=...
+   AUTH_GOOGLE_SECRET=...
+   AUTH_DISCORD_ID=...
+   AUTH_DISCORD_SECRET=...
+   ```
+
+Deux URLs de retour par fournisseur : l'espace pro (`/api/auth`) et l'espace client (`/api/auth/client`) sont deux
+sessions séparées.
+
 ## Santé
 
 - `GET /api/health` → liveness (utilisé par Docker, ne touche pas la base).
