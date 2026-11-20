@@ -23,7 +23,13 @@ const fold = (line: string) => {
   return out.join("\r\n");
 };
 
-export const appointmentIcs = (a: AppointmentForEmail, opts: { cancelled?: boolean; sequence?: number } = {}) => {
+const attendee = (name: string, email: string) =>
+  `ATTENDEE;CN="${name.replace(/["\r\n]/g, "")}";ROLE=REQ-PARTICIPANT;PARTSTAT=ACCEPTED:mailto:${email}`;
+
+export const appointmentIcs = (
+  a: AppointmentForEmail,
+  opts: { cancelled?: boolean; sequence?: number; summary?: string } = {}
+) => {
   const host = a.user.name || a.user.email;
   const where = a.meetingType === "video" ? a.videoLink || "Visio" : a.location || "";
   const description = [
@@ -46,10 +52,14 @@ export const appointmentIcs = (a: AppointmentForEmail, opts: { cancelled?: boole
     `DTSTAMP:${icsDate(new Date())}`,
     `DTSTART:${icsDate(a.startTime)}`,
     `DTEND:${icsDate(a.endTime)}`,
-    `SUMMARY:${icsText(`${a.eventType.name} avec ${host}`)}`,
+    `SUMMARY:${icsText(opts.summary ?? `${a.eventType.name} avec ${host}`)}`,
     `DESCRIPTION:${icsText(description)}`,
     where ? `LOCATION:${icsText(where)}` : "",
     a.meetingType === "video" && a.videoLink ? `URL:${a.videoLink}` : "",
+    // Entretien : tout le monde voit qui est présent
+    ...(a.staff?.length
+      ? [attendee(a.clientName, a.clientEmail), ...a.staff.map((s) => attendee(s.name, s.email))]
+      : []),
     `STATUS:${opts.cancelled ? "CANCELLED" : "CONFIRMED"}`,
     "BEGIN:VALARM",
     "ACTION:DISPLAY",

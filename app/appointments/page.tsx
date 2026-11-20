@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Check, ExternalLink, Mail, MapPin, MoreHorizontal, Phone, Trash2, Video, X } from "lucide-react";
+import { Check, ExternalLink, Mail, MapPin, MoreHorizontal, Phone, Trash2, Users, Video, X } from "lucide-react";
 import { MainLayout } from "@/components/layout/main-layout";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -49,6 +49,7 @@ type AppointmentFromDB = {
   meetingType?: string;
   videoLink?: string | null;
   status: string;
+  staff?: { id: string; name: string }[];
 };
 
 type Filter = "upcoming" | "pending" | "past" | "all";
@@ -273,6 +274,12 @@ function AppointmentsContent() {
                                   <Phone className="size-3.5" />
                                   {apt.clientPhone}
                                 </a>
+                              )}
+                              {own && apt.staff && apt.staff.length > 0 && (
+                                <span className="inline-flex items-center gap-1.5">
+                                  <Users className="size-3.5" />
+                                  {apt.staff.map((s) => s.name).join(", ")}
+                                </span>
                               )}
                               {apt.location && (
                                 <span className="inline-flex items-center gap-1.5">

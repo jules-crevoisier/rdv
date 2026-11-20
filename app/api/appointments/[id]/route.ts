@@ -80,6 +80,7 @@ export async function DELETE(
       include: {
         eventType: { select: { id: true, name: true, duration: true } },
         user: { select: { name: true, email: true } },
+        staff: { select: { name: true, email: true } },
       },
     });
     const result = await deleteAppointment(id, session.user.id, session.user.email || undefined);

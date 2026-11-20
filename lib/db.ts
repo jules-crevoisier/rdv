@@ -125,7 +125,7 @@ export const getAppointments = async (userId: string, userEmail?: string) => {
     where: {
       OR: whereConditions,
     },
-    include: { eventType: true },
+    include: { eventType: true, staff: { select: { id: true, name: true }, orderBy: { name: "asc" } } },
     orderBy: { startTime: "desc" },
   });
 };
