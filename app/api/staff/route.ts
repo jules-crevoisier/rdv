@@ -35,7 +35,8 @@ export async function POST(request: Request) {
     const hostId = session.user.id;
     after(async () => {
       const host = await prisma.user.findUnique({ where: { id: hostId }, select: { name: true, email: true } });
-      if (host) await sendStaffWelcome(staff, host, request).catch((e) => console.error("[staff-welcome]", e));
+      // Pas d'invitation quand l'organisateur s'ajoute lui-même.
+      if (host && host.email.toLowerCase() !== staff.email.toLowerCase()) await sendStaffWelcome(staff, host, request).catch((e) => console.error("[staff-welcome]", e));
     });
     return NextResponse.json({ ...staff, upcomingCount: 0 }, { status: 201 });
   } catch (error) {

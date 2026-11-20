@@ -41,14 +41,16 @@ export async function GET(request: Request) {
       eventType: { select: { name: true, color: true, location: true } },
       user: { select: { name: true, email: true } },
       staff: { select: { id: true, name: true, role: true, email: true } },
+      _count: { select: { comments: true } },
     },
   });
 
   return NextResponse.json({
     verified: true,
     count: interviews.length,
-    interviews: interviews.map(({ staff, user, ...a }) => ({
+    interviews: interviews.map(({ staff, user, _count, ...a }) => ({
       ...a,
+      commentCount: _count.comments,
       organizer: user.name || user.email,
       // Les autres responsables du même entretien, sans leurs adresses.
       team: staff

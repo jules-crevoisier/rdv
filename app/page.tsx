@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { ArrowRight, CalendarSync, ChevronLeft, ChevronRight, Plus, RefreshCw } from "lucide-react";
+import { ArrowRight, CalendarSync, ChevronLeft, ChevronRight, MessageSquare, Plus, RefreshCw, Users } from "lucide-react";
 import { MainLayout } from "@/components/layout/main-layout";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -23,6 +23,8 @@ import { StatusPill } from "@/components/app/status";
 import { Ticket } from "@/components/app/ticket";
 import { CopyButton } from "@/components/app/copy-button";
 import { EmptyState } from "@/components/app/empty-state";
+import { AppointmentPanel } from "@/components/appointments/appointment-panel";
+import { useAppointmentStaff } from "@/components/appointments/use-appointment-staff";
 import { formatTime, isSameDay } from "@/lib/utils";
 
 type EventTypeFromDB = {
@@ -44,7 +46,10 @@ type AppointmentFromDB = {
   endTime: string;
   clientName: string;
   clientEmail: string;
+  clientPhone?: string | null;
   status: string;
+  staff?: { id: string; name: string }[];
+  _count?: { comments: number };
 };
 
 const longDate = (d: Date) => d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
@@ -58,6 +63,15 @@ export default function DashboardPage() {
   const [icalUrl, setIcalUrl] = useState<string>("");
   const [icalNote, setIcalNote] = useState<string>("");
   const [now, setNow] = useState<Date>(new Date());
+  const [openId, setOpenId] = useState<string | null>(null);
+
+  const patch = useCallback((id: string, change: Partial<AppointmentFromDB>) => {
+    setAppointments((list) => list.map((a) => (a.id === id ? { ...a, ...change } : a)));
+  }, []);
+  const team = useAppointmentStaff(
+    sessionStatus === "authenticated",
+    useCallback((id, staff) => patch(id, { staff }), [patch])
+  );
 
   useEffect(() => {
     const id = window.setInterval(() => setNow(new Date()), 60_000);
@@ -269,11 +283,44 @@ export default function DashboardPage() {
                 {dayAppointments.map((apt) => {
                   const mine = isClient(apt) && !isOwner(apt);
                   return (
-                    <Ticket key={apt.id} as="li" start={apt.startTime} end={apt.endTime} muted={new Date(apt.endTime) < now}>
+                    <Ticket
+                      key={apt.id}
+                      as="li"
+                      start={apt.startTime}
+                      end={apt.endTime}
+                      muted={new Date(apt.endTime) < now}
+                      className={isOwner(apt) ? "relative transition-colors hover:border-foreground/20" : undefined}
+                    >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <p className="truncate font-medium">{mine ? "Votre rendez-vous" : apt.clientName}</p>
+                          {isOwner(apt) ? (
+                            <button
+                              type="button"
+                              onClick={() => setOpenId(apt.id)}
+                              className="block max-w-full truncate text-left font-medium outline-none after:absolute after:inset-0 after:rounded-xl focus-visible:after:ring-[3px] focus-visible:after:ring-ring/50"
+                            >
+                              {apt.clientName}
+                            </button>
+                          ) : (
+                            <p className="truncate font-medium">{mine ? "Votre rendez-vous" : apt.clientName}</p>
+                          )}
                           <p className="truncate text-sm text-muted-foreground">{apt.eventType.name}</p>
+                          {isOwner(apt) && (
+                            <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                              <span className="inline-flex min-w-0 items-center gap-1">
+                                <Users className="size-3.5 shrink-0" aria-hidden="true" />
+                                <span className="truncate">
+                                  {apt.staff?.length ? apt.staff.map((s) => s.name).join(", ") : "Personne pour l'entretien"}
+                                </span>
+                              </span>
+                              {apt._count?.comments ? (
+                                <span className="inline-flex items-center gap-1">
+                                  <MessageSquare className="size-3.5" aria-hidden="true" />
+                                  {apt._count.comments}
+                                </span>
+                              ) : null}
+                            </p>
+                          )}
                         </div>
                         <StatusPill status={apt.status} />
                       </div>
@@ -314,9 +361,19 @@ export default function DashboardPage() {
                     const mine = isClient(apt) && !isOwner(apt);
                     const d = new Date(apt.startTime);
                     return (
-                      <li key={apt.id} className="flex items-center justify-between gap-3 px-4 py-3 text-sm">
+                      <li key={apt.id} className="relative flex items-center justify-between gap-3 px-4 py-3 text-sm transition-colors first:rounded-t-xl last:rounded-b-xl hover:bg-accent/50">
                         <div className="min-w-0">
-                          <p className="truncate font-medium">{mine ? "Votre rendez-vous" : apt.clientName}</p>
+                          {mine ? (
+                            <p className="truncate font-medium">Votre rendez-vous</p>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setOpenId(apt.id)}
+                              className="block max-w-full truncate text-left font-medium outline-none after:absolute after:inset-0 focus-visible:after:ring-[3px] focus-visible:after:ring-ring/50"
+                            >
+                              {apt.clientName}
+                            </button>
+                          )}
                           <p className="truncate text-muted-foreground">{apt.eventType.name}</p>
                         </div>
                         <div className="shrink-0 text-right">
@@ -344,6 +401,25 @@ export default function DashboardPage() {
           </aside>
         </div>
       </div>
+      {(() => {
+        const apt = appointments.find((a) => a.id === openId) ?? null;
+        const myEmail = session?.user?.email?.toLowerCase();
+        const self = team.directory.find((m) => m.email.toLowerCase() === myEmail);
+        const canAddSelf = apt && (!self || !(apt.staff ?? []).some((m) => m.id === self.id));
+        return (
+          <AppointmentPanel
+            open={!!apt}
+            onOpenChange={(o) => !o && setOpenId(null)}
+            appointment={apt && { ...apt, eventTypeName: apt.eventType.name }}
+            directory={team.directory}
+            onAssign={apt ? (ids) => team.assign(apt.id, ids, apt.staff ?? []) : undefined}
+            onAddSelf={apt && canAddSelf ? () => team.addSelf(apt.id) : undefined}
+            busy={team.busyId === apt?.id}
+            error={team.error}
+            onCommentCount={(n) => apt && patch(apt.id, { _count: { comments: n } })}
+          />
+        );
+      })()}
     </MainLayout>
   );
 }

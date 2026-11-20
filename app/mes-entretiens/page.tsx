@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import { Mail, MapPin, Phone, Video } from "lucide-react";
+import { Mail, MapPin, MessageSquare, Phone, Video } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { AppointmentPanel } from "@/components/appointments/appointment-panel";
 import { MainLayout } from "@/components/layout/main-layout";
 import { PageHeader } from "@/components/app/page-header";
 import { PageSkeleton } from "@/components/app/loading";
@@ -25,11 +27,14 @@ type Interview = {
   organizer: string;
   eventType: { name: string; color: string; location: string | null };
   team: { id: string; name: string; role: string | null }[];
+  commentCount: number;
 };
+
+const teamLabel = (a: Interview) => a.team.map((t) => (t.role ? `${t.name} (${t.role})` : t.name)).join(", ");
 
 type Payload = { verified: boolean; interviews: Interview[]; loadedAt: number };
 
-const InterviewTicket = ({ interview: a, muted }: { interview: Interview; muted?: boolean }) => {
+const InterviewTicket = ({ interview: a, muted, onOpen }: { interview: Interview; muted?: boolean; onOpen: () => void }) => {
   const place = a.location || a.eventType.location;
   return (
     <Ticket as="li" start={a.startTime} end={a.endTime} showDate color={a.eventType.color} muted={muted}>
@@ -65,12 +70,12 @@ const InterviewTicket = ({ interview: a, muted }: { interview: Interview; muted?
         ) : null}
       </div>
 
-      {a.team.length > 0 && (
-        <p className="mt-2 text-sm text-muted-foreground">
-          Avec {a.team.map((t) => (t.role ? `${t.name} (${t.role})` : t.name)).join(", ")}
-        </p>
-      )}
+      {a.team.length > 0 && <p className="mt-2 text-sm text-muted-foreground">Avec {teamLabel(a)}</p>}
       {a.notes && <p className="mt-2 border-l-2 pl-3 text-sm italic text-muted-foreground">{a.notes}</p>}
+      <Button variant="ghost" size="sm" className="-ml-2 mt-2 h-7 px-2 text-muted-foreground" onClick={onOpen}>
+        <MessageSquare />
+        {a.commentCount ? `${a.commentCount} commentaire${a.commentCount > 1 ? "s" : ""}` : "Commenter"}
+      </Button>
     </Ticket>
   );
 };
@@ -78,6 +83,7 @@ const InterviewTicket = ({ interview: a, muted }: { interview: Interview; muted?
 export default function MyInterviewsPage() {
   const { data: session } = useSession();
   const [data, setData] = useState<Payload | null>(null);
+  const [openId, setOpenId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!session?.user) return;
@@ -129,7 +135,7 @@ export default function MyInterviewsPage() {
                 <h2 id="up-title" className="mb-4 text-xl">À venir</h2>
                 <ol className="space-y-3">
                   {upcoming.map((a) => (
-                    <InterviewTicket key={a.id} interview={a} />
+                    <InterviewTicket key={a.id} interview={a} onOpen={() => setOpenId(a.id)} />
                   ))}
                 </ol>
               </section>
@@ -139,7 +145,7 @@ export default function MyInterviewsPage() {
                 <h2 id="past-title" className="mb-4 text-xl text-muted-foreground">Passés</h2>
                 <ol className="space-y-3">
                   {past.map((a) => (
-                    <InterviewTicket key={a.id} interview={a} muted />
+                    <InterviewTicket key={a.id} interview={a} muted onOpen={() => setOpenId(a.id)} />
                   ))}
                 </ol>
               </section>
@@ -147,6 +153,21 @@ export default function MyInterviewsPage() {
           </>
         )}
       </div>
+
+      {(() => {
+        const a = data.interviews.find((i) => i.id === openId) ?? null;
+        return (
+          <AppointmentPanel
+            open={!!a}
+            onOpenChange={(o) => !o && setOpenId(null)}
+            appointment={a && { ...a, eventTypeName: a.eventType.name }}
+            team={a ? ["Vous", teamLabel(a)].filter(Boolean).join(", ") : undefined}
+            onCommentCount={(n) =>
+              a && setData((d) => d && { ...d, interviews: d.interviews.map((i) => (i.id === a.id ? { ...i, commentCount: n } : i)) })
+            }
+          />
+        );
+      })()}
     </MainLayout>
   );
 }

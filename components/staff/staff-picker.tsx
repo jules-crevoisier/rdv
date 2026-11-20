@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Plus, UserRoundPlus } from "lucide-react";
+import { Plus, UserRoundCheck, UserRoundPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -27,6 +27,7 @@ export const StaffPicker = ({
   disabled,
   label,
   emptyLabel = "Aucun responsable",
+  onAddSelf,
 }: {
   staff: StaffMember[];
   value: string[];
@@ -34,6 +35,8 @@ export const StaffPicker = ({
   disabled?: boolean;
   label: string;
   emptyLabel?: string;
+  /** Affiche « Me placer sur cet entretien » (l'organisateur se met lui-même en responsable). */
+  onAddSelf?: () => void;
 }) => {
   const selected = staff.filter((s) => value.includes(s.id));
   const toggle = (id: string, on: boolean) => onChange(on ? [...value, id] : value.filter((v) => v !== id));
@@ -65,6 +68,15 @@ export const StaffPicker = ({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-64">
+          {onAddSelf && (
+            <>
+              <DropdownMenuItem onClick={onAddSelf}>
+                <UserRoundCheck />
+                Me placer sur cet entretien
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+            </>
+          )}
           <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">Responsables présents</DropdownMenuLabel>
           {staff.map((s) => (
             <DropdownMenuCheckboxItem
