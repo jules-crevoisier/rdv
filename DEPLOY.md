@@ -70,6 +70,12 @@ les heures. Dans Dokploy : **Schedules** (sur le compose, service `app`) → cro
 wget -qO- --header="Authorization: Bearer $CRON_SECRET" http://127.0.0.1:3000/api/cron/reminders
 ```
 
+### Bot Discord NDS
+
+`/api/integrations/entretiens?event=Entretien%20NDS` renvoie les entretiens à venir de ce type de rendez-vous avec
+leurs responsables (sans email ni téléphone des candidats). Il faut l'en-tête `Authorization: Bearer $INTEGRATION_TOKEN`.
+Dans Dokploy, ajouter `INTEGRATION_TOKEN=<openssl rand -hex 32>` et mettre la même valeur dans `RDV_TOKEN` du bot.
+
 ## Connexion Google et Discord
 
 Les boutons « Google » et « Discord » n'apparaissent que si leurs deux variables sont définies. Les comptes sont
